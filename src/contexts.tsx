@@ -182,7 +182,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Computed
   const activeProject = projects.find(p => p.id === activeProjectId) || null;
   const activeFolder = activeProject?.folders.find(f => f.id === activeFolderId) || null;
-  const activeChapter = activeFolder?.chapters.find(c => c.id === activeChapterId) || null;
+  
+  // Search for active chapter across all folders in the active project
+  const activeChapter = activeProject?.folders
+    .flatMap(f => f.chapters)
+    .find(c => c.id === activeChapterId) || null;
 
   // Project actions
   const createProject = (name: string, description: string) => {

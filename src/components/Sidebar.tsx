@@ -232,7 +232,16 @@ export function Sidebar() {
                             className={`flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer text-xs transition-all ${
                               activeChapterId === chapter.id ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/5 opacity-70 hover:opacity-100'
                             } ${draggedChapterId === chapter.id ? 'opacity-50 scale-95' : ''}`}
-                            onClick={() => setActiveChapter(chapter.id)}
+                            onClick={() => {
+                              setActiveFolder(folder.id);
+                              setActiveChapter(chapter.id);
+                              // Ensure folder is expanded
+                              setCollapsedFolders(prev => {
+                                const next = new Set(prev);
+                                next.delete(folder.id);
+                                return next;
+                              });
+                            }}
                           >
                             <div className="drag-handle opacity-30 hover:opacity-100">
                               <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
