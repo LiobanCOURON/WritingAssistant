@@ -7,7 +7,8 @@ export function ThemeSwitcher() {
   const { theme, setTheme, customAnimations, animationLevel } = useApp();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const shouldAnimate = animationLevel === 'all' || 
+  const shouldAnimate = animationLevel === 'more' || 
+                        animationLevel === 'all' || 
                         animationLevel === 'chaos' || 
                         (animationLevel === 'custom' && customAnimations.iconsBounce);
 

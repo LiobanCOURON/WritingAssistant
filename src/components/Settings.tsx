@@ -28,6 +28,7 @@ export function SettingsModal() {
   const [agentModels, setAgentModels] = useState<string[]>([]);
   const [loadingInline, setLoadingInline] = useState(false);
   const [loadingAgent, setLoadingAgent] = useState(false);
+  const [showChaosConfirm, setShowChaosConfirm] = useState(false);
 
   useEffect(() => {
     if (settingsOpen) {
@@ -143,7 +144,11 @@ export function SettingsModal() {
                 <button
                   key={opt.value}
                   onClick={() => {
-                    setAnimationLevel(opt.value);
+                    if (opt.value === 'chaos') {
+                      setShowChaosConfirm(true);
+                    } else {
+                      setAnimationLevel(opt.value);
+                    }
                     soundManager.pop();
                   }}
                   onMouseEnter={() => soundManager.hover()}
@@ -363,6 +368,51 @@ export function SettingsModal() {
           </button>
         </div>
       </div>
+
+      {/* Chaos Confirmation Modal */}
+      {showChaosConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 anim-fade-in">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowChaosConfirm(false)} />
+          <div className="glass w-full max-w-md relative z-10 anim-scale-in p-6 border-2 border-red-500/50">
+            <div className="text-center">
+              <div className="text-6xl mb-4 anim-bounce-in">🌪️</div>
+              <h3 className="text-2xl font-bold text-red-400 mb-3">
+                Activer le mode Chaos ?
+              </h3>
+              <p className="text-sm opacity-80 mb-6 leading-relaxed">
+                ⚠️ <strong>Attention :</strong> Le mode Chaos applique des animations extrêmes à toute l'interface.
+                <br /><br />
+                Cela peut rendre l'application <strong>difficile à utiliser</strong> et causer de l'inconfort visuel.
+                <br /><br />
+                Êtes-vous sûr de vouloir continuer ?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setAnimationLevel('chaos');
+                    setShowChaosConfirm(false);
+                    soundManager.success();
+                  }}
+                  onMouseEnter={() => soundManager.hover()}
+                  className="glass-button flex-1 py-2.5 bg-red-500/20 border-red-500/40 hover:bg-red-500/30 anim-scale-hover hover-glow"
+                >
+                  Oui, activer Chaos
+                </button>
+                <button
+                  onClick={() => {
+                    setShowChaosConfirm(false);
+                    soundManager.click();
+                  }}
+                  onMouseEnter={() => soundManager.hover()}
+                  className="glass-button flex-1 py-2.5 anim-scale-hover hover-glow"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

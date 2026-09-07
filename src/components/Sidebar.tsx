@@ -17,7 +17,8 @@ export function Sidebar() {
     customAnimations, animationLevel,
   } = useApp();
 
-  const shouldAnimate = animationLevel === 'all' || 
+  const shouldAnimate = animationLevel === 'more' || 
+                        animationLevel === 'all' || 
                         animationLevel === 'chaos' || 
                         (animationLevel === 'custom' && customAnimations.iconsBounce);
 

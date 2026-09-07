@@ -27,7 +27,8 @@ function AppContent() {
   const { createExplosion } = useExplosionParticles();
   const isChaos = animationLevel === 'chaos';
   
-  const shouldAnimate = animationLevel === 'all' || 
+  const shouldAnimate = animationLevel === 'more' || 
+                        animationLevel === 'all' || 
                         animationLevel === 'chaos' || 
                         (animationLevel === 'custom' && customAnimations.iconsBounce);
 
