@@ -43,16 +43,25 @@ export function LanguageSwitcher() {
           
           {/* Dropdown avec effet liquid glass */}
           <div 
-            className="absolute right-0 top-full mt-2 z-[100] min-w-[180px] anim-scale-in shadow-2xl rounded-xl p-2"
+            className="absolute right-0 top-full mt-2 z-[100] min-w-[180px] anim-scale-in rounded-xl overflow-hidden"
             style={{
-              background: 'rgba(30, 41, 59, 0.75)',
-              backdropFilter: 'blur(24px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(200%)',
-              border: '1px solid rgba(148, 163, 184, 0.3)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-              color: '#f1f5f9',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
             }}
           >
+            {/* Couche de flou en arrière-plan */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'rgba(15, 23, 42, 0.4)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              }}
+            />
+            {/* Contenu */}
+            <div 
+              className="relative p-2 border border-white/20 rounded-xl"
+              style={{ color: '#f1f5f9' }}
+            >
             {(Object.keys(languageNames) as Language[]).map((lang, index) => (
               <button
                 key={lang}
@@ -69,6 +78,7 @@ export function LanguageSwitcher() {
                 {language === lang && <Check size={16} className="text-emerald-400 anim-pop" />}
               </button>
             ))}
+            </div>
           </div>
         </>
       )}

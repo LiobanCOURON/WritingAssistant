@@ -34,32 +34,42 @@ export function ThemeSwitcher() {
           
           {/* Dropdown avec effet liquid glass */}
           <div 
-            className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] anim-scale-in shadow-2xl rounded-xl p-2"
+            className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] anim-scale-in rounded-xl overflow-hidden"
             style={{
-              background: 'rgba(30, 41, 59, 0.75)',
-              backdropFilter: 'blur(24px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(200%)',
-              border: '1px solid rgba(148, 163, 184, 0.3)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-              color: '#f1f5f9',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
             }}
           >
-            {themes.map((t, index) => (
-              <button
-                key={t.value}
-                onClick={() => { setTheme(t.value); setIsOpen(false); }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all anim-slide-in-left hover-lift ${
-                  theme === t.value
-                    ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-emerald-400 font-semibold'
-                    : 'hover:bg-white/10'
-                }`}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <t.icon size={18} className="anim-scale-hover" />
-                <span className="flex-1 text-left">{t.label}</span>
-                {theme === t.value && <Check size={16} className="text-emerald-400 anim-pop" />}
-              </button>
-            ))}
+            {/* Couche de flou en arrière-plan */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'rgba(15, 23, 42, 0.4)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              }}
+            />
+            {/* Contenu */}
+            <div 
+              className="relative p-2 border border-white/20 rounded-xl"
+              style={{ color: '#f1f5f9' }}
+            >
+              {themes.map((t, index) => (
+                <button
+                  key={t.value}
+                  onClick={() => { setTheme(t.value); setIsOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all anim-slide-in-left hover-lift ${
+                    theme === t.value
+                      ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-emerald-400 font-semibold'
+                      : 'hover:bg-white/10'
+                  }`}
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <t.icon size={18} className="anim-scale-hover" />
+                  <span className="flex-1 text-left">{t.label}</span>
+                  {theme === t.value && <Check size={16} className="text-emerald-400 anim-pop" />}
+                </button>
+              ))}
+            </div>
           </div>
         </>
       )}
