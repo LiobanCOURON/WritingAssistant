@@ -3,6 +3,7 @@ import { useApp } from '../contexts';
 import { t } from '../i18n';
 import { AnimationLevel } from '../types';
 import { fetchModels } from '../services';
+import { soundManager } from '../utils/sounds';
 import {
   X, Key, Server, Cpu, Sparkles, Check, Loader2,
   Sun, Moon, Monitor, Zap, Wand2, Palette
@@ -110,7 +111,11 @@ export function SettingsModal() {
               ] as const).map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setTheme(opt.value)}
+                  onClick={() => {
+                    setTheme(opt.value);
+                    soundManager.pop();
+                  }}
+                  onMouseEnter={() => soundManager.hover()}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover-glow anim-scale-hover ${
                     theme === opt.value
                       ? 'bg-gradient-to-r from-blue-500/30 to-emerald-500/30 border border-emerald-500/40'
@@ -119,7 +124,7 @@ export function SettingsModal() {
                 >
                   {opt.icon}
                   <span className="text-sm">{opt.label}</span>
-                  {theme === opt.value && <Check size={14} className="text-emerald-400" />}
+                  {theme === opt.value && <Check size={14} className="text-emerald-400 anim-pop" />}
                 </button>
               ))}
             </div>
@@ -135,7 +140,11 @@ export function SettingsModal() {
               {animationOptions.map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setAnimationLevel(opt.value)}
+                  onClick={() => {
+                    setAnimationLevel(opt.value);
+                    soundManager.pop();
+                  }}
+                  onMouseEnter={() => soundManager.hover()}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all hover-glow anim-scale-hover ${
                     animationLevel === opt.value
                       ? 'bg-gradient-to-r from-blue-500/30 to-emerald-500/30 border border-emerald-500/40'
@@ -146,6 +155,21 @@ export function SettingsModal() {
                   <span className="text-sm">{opt.label}</span>
                 </button>
               ))}
+            </div>
+            
+            {/* Sound toggle */}
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  onChange={(e) => soundManager.setEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded accent-emerald-500"
+                />
+                <span className="text-sm flex items-center gap-2">
+                  🔊 Effets sonores
+                </span>
+              </label>
             </div>
             
             {/* Custom Animations */}
@@ -299,13 +323,21 @@ export function SettingsModal() {
         {/* Footer */}
         <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
           <button
-            onClick={handleSave}
+            onClick={() => {
+              handleSave();
+              soundManager.success();
+            }}
+            onMouseEnter={() => soundManager.hover()}
             className="glass-button glass-button-primary flex-1 py-2.5 anim-scale-hover hover-glow"
           >
             {t('save', language)}
           </button>
           <button
-            onClick={() => setSettingsOpen(false)}
+            onClick={() => {
+              setSettingsOpen(false);
+              soundManager.click();
+            }}
+            onMouseEnter={() => soundManager.hover()}
             className="glass-button flex-1 py-2.5 anim-scale-hover hover-glow"
           >
             {t('cancel', language)}

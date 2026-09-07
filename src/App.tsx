@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AppProvider, useApp } from './contexts';
 import { t } from './i18n';
 import { Sidebar } from './components/Sidebar';
@@ -9,13 +9,40 @@ import { NotesPanel } from './components/NotesPanel';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { Menu, Bot, Settings, PanelLeftOpen, PanelRightOpen, StickyNote } from 'lucide-react';
+import { useHoverTrail, useExplosionParticles } from './hooks/useParticles';
+import { soundManager } from './utils/sounds';
 
 function AppContent() {
   const {
     language, sidebarOpen, agentOpen, settingsOpen, notesOpen,
     setSidebarOpen, setAgentOpen, setSettingsOpen, setNotesOpen,
-    activeProject,
+    activeProject, animationLevel,
   } = useApp();
+
+  // Enable hover trail only in "all" animation mode
+  if (animationLevel === 'all') {
+    useHoverTrail();
+  }
+
+  const { createExplosion } = useExplosionParticles();
+
+  const handleSidebarToggle = (e: React.MouseEvent) => {
+    setSidebarOpen(!sidebarOpen);
+    soundManager.whoosh();
+    createExplosion(e.clientX, e.clientY, '#3b82f6');
+  };
+
+  const handleAgentToggle = (e: React.MouseEvent) => {
+    setAgentOpen(!agentOpen);
+    soundManager.whoosh();
+    createExplosion(e.clientX, e.clientY, '#10b981');
+  };
+
+  const handleNotesToggle = (e: React.MouseEvent) => {
+    setNotesOpen(!notesOpen);
+    soundManager.pop();
+    createExplosion(e.clientX, e.clientY, '#8b5cf6');
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden relative">
@@ -36,6 +63,16 @@ function AppContent() {
         <div className="particle particle-3" style={{ top: '90%', left: '20%', animationDuration: '19s' }} />
         <div className="particle particle-4" style={{ top: '50%', left: '40%', animationDuration: '21s' }} />
         <div className="particle particle-5" style={{ top: '15%', left: '75%', animationDuration: '23s' }} />
+        <div className="particle particle-1" style={{ top: '45%', left: '25%', animationDuration: '17s' }} />
+        <div className="particle particle-2" style={{ top: '75%', left: '85%', animationDuration: '26s' }} />
+        <div className="particle particle-3" style={{ top: '5%', left: '45%', animationDuration: '20s' }} />
+        <div className="particle particle-4" style={{ top: '85%', left: '55%', animationDuration: '22s' }} />
+        <div className="particle particle-5" style={{ top: '35%', left: '15%', animationDuration: '24s' }} />
+        <div className="particle particle-1" style={{ top: '55%', left: '65%', animationDuration: '19s' }} />
+        <div className="particle particle-2" style={{ top: '25%', left: '35%', animationDuration: '21s' }} />
+        <div className="particle particle-3" style={{ top: '65%', left: '75%', animationDuration: '23s' }} />
+        <div className="particle particle-4" style={{ top: '95%', left: '45%', animationDuration: '25s' }} />
+        <div className="particle particle-5" style={{ top: '35%', left: '95%', animationDuration: '27s' }} />
       </div>
 
       {/* Top Bar */}
@@ -53,7 +90,8 @@ function AppContent() {
 
           {/* Sidebar toggle */}
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={handleSidebarToggle}
+            onMouseEnter={() => soundManager.hover()}
             className="glass-button p-2 ml-2 anim-scale-hover hover-glow"
             title={sidebarOpen ? 'Masquer' : 'Afficher'}
           >
@@ -68,7 +106,8 @@ function AppContent() {
           {/* Notes toggle */}
           {activeProject && (
             <button
-              onClick={() => setNotesOpen(true)}
+              onClick={handleNotesToggle}
+              onMouseEnter={() => soundManager.hover()}
               className="glass-button p-2 anim-scale-hover hover-glow"
               title={t('memory', language)}
             >
@@ -78,7 +117,8 @@ function AppContent() {
 
           {/* Agent toggle */}
           <button
-            onClick={() => setAgentOpen(!agentOpen)}
+            onClick={handleAgentToggle}
+            onMouseEnter={() => soundManager.hover()}
             className="glass-button p-2 anim-scale-hover hover-glow"
             title={t('agent', language)}
           >
@@ -87,7 +127,11 @@ function AppContent() {
 
           {/* Settings */}
           <button
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => {
+              setSettingsOpen(true);
+              soundManager.click();
+            }}
+            onMouseEnter={() => soundManager.hover()}
             className="glass-button p-2 anim-scale-hover hover-glow"
             title={t('settings', language)}
           >
