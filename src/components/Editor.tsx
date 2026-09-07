@@ -392,7 +392,7 @@ export function Editor() {
 
         {/* Slash command menu */}
         {showSlashMenu && filteredCommands.length > 0 && (
-          <div className="absolute top-20 left-20 glass p-2 z-30 min-w-[280px] max-h-[300px] overflow-y-auto anim-scale-in shadow-2xl">
+          <div className="absolute top-20 left-20 glass p-2 z-50 min-w-[280px] max-h-[300px] overflow-y-auto anim-scale-in shadow-2xl">
             <div className="text-xs opacity-60 px-3 py-1 mb-1 flex items-center gap-2">
               <Zap size={12} className="text-emerald-400" />
               {t('slashCommands', language)}
@@ -424,7 +424,7 @@ export function Editor() {
       {showSlashInstruction && selectedCommand && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="dropdown-backdrop" onClick={() => setShowSlashInstruction(false)} />
-          <div className="glass p-6 max-w-md w-full anim-scale-in shadow-2xl relative z-10">
+          <div className="glass p-6 max-w-md w-full anim-scale-in shadow-2xl relative z-40">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-3xl anim-bounce-in">{selectedCommand.icon}</span>
               <div>
@@ -464,7 +464,7 @@ export function Editor() {
       {showDiff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="dropdown-backdrop" onClick={rejectDiff} />
-          <div className="glass p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col anim-scale-in shadow-2xl relative z-10">
+          <div className="glass p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col anim-scale-in shadow-2xl relative z-40">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gradient-anim flex items-center gap-2">
                 <RefreshCw size={20} className="anim-rotate-in" />

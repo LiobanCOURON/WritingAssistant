@@ -33,8 +33,8 @@ export function NotesPanel() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setNotesOpen(false)} />
-      <div className="glass w-full max-w-4xl max-h-[85vh] overflow-hidden relative anim-scale-in flex flex-col">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30" onClick={() => setNotesOpen(false)} />
+      <div className="glass w-full max-w-4xl max-h-[85vh] overflow-hidden relative z-40 anim-scale-in flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-2">

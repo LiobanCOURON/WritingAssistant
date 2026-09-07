@@ -676,12 +676,30 @@ body {
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   background: rgba(0, 0, 0, 0.1);
-  z-index: 40;
+  z-index: 30;
   animation: fadeIn 0.2s ease;
+  pointer-events: auto;
 }
 
 .dark .dropdown-backdrop {
   background: rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure inputs and textareas stay above backdrop */
+textarea,
+input,
+.glass-input,
+.glass-select,
+[contenteditable] {
+  position: relative;
+  z-index: 35;
+}
+
+/* Slash command menu and other interactive overlays */
+.slash-menu,
+.dropdown-menu {
+  position: relative;
+  z-index: 40;
 }
 
 /* ========================

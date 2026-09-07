@@ -80,8 +80,8 @@ export function SettingsModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSettingsOpen(false)} />
-      <div className="glass w-full max-w-2xl max-h-[85vh] overflow-y-auto relative anim-scale-in p-6">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30" onClick={() => setSettingsOpen(false)} />
+      <div className="glass w-full max-w-2xl max-h-[85vh] overflow-y-auto relative z-40 anim-scale-in p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent flex items-center gap-2">
