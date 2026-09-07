@@ -36,11 +36,12 @@ export function ThemeSwitcher() {
           <div 
             className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] anim-scale-in shadow-2xl rounded-xl p-2"
             style={{
-              background: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              background: 'rgba(30, 41, 59, 0.75)',
+              backdropFilter: 'blur(24px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+              color: '#f1f5f9',
             }}
           >
             {themes.map((t, index) => (
