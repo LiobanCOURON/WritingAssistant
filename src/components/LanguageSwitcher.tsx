@@ -20,8 +20,12 @@ const languageFlags: Record<Language, string> = {
 };
 
 export function LanguageSwitcher() {
-  const { language, setLanguage } = useApp();
+  const { language, setLanguage, customAnimations, animationLevel } = useApp();
   const [isOpen, setIsOpen] = React.useState(false);
+
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   return (
     <div className="relative">
@@ -29,7 +33,7 @@ export function LanguageSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         className="glass-button flex items-center gap-2 text-sm px-3 py-2 hover-glow ripple"
       >
-        <Globe size={16} className="anim-float" />
+        <Globe size={16} className={shouldAnimate ? "anim-float" : ""} />
         <span>{languageFlags[language]}</span>
       </button>
 

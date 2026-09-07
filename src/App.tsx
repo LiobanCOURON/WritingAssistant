@@ -16,7 +16,7 @@ function AppContent() {
   const {
     language, sidebarOpen, agentOpen, settingsOpen, notesOpen,
     setSidebarOpen, setAgentOpen, setSettingsOpen, setNotesOpen,
-    activeProject, animationLevel,
+    activeProject, animationLevel, customAnimations,
   } = useApp();
 
   // Enable hover trail only in "all" animation mode
@@ -26,6 +26,10 @@ function AppContent() {
 
   const { createExplosion } = useExplosionParticles();
   const isChaos = animationLevel === 'chaos';
+  
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   const handleSidebarToggle = (e: React.MouseEvent) => {
     setSidebarOpen(!sidebarOpen);
@@ -99,7 +103,7 @@ function AppContent() {
         <div className="flex items-center gap-3">
           {/* Logo */}
           <div className="flex items-center gap-2 anim-scale-hover">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 anim-pulse-subtle">
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 ${shouldAnimate ? 'anim-pulse-subtle' : ''}`}>
               <span className="text-white font-bold text-sm">P</span>
             </div>
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent hidden sm:block">

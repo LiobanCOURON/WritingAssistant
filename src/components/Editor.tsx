@@ -27,7 +27,12 @@ export function Editor() {
   const {
     language, activeChapter, activeProject, activeFolder, apiConfig,
     updateChapterContent, updateChapterTitle, getNotesContext,
+    customAnimations, animationLevel,
   } = useApp();
+
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   const [suggestion, setSuggestion] = useState('');
   const [showSuggestion, setShowSuggestion] = useState(false);
@@ -260,7 +265,7 @@ export function Editor() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center glass p-12 max-w-md anim-scale-in">
-          <div className="text-6xl mb-4 anim-float">✍️</div>
+          <div className={`text-6xl mb-4 ${shouldAnimate ? 'anim-float' : ''}`}>✍️</div>
           <h2 className="text-2xl font-bold mb-2 text-gradient-anim">
             {t('welcome', language)}
           </h2>
@@ -285,7 +290,7 @@ export function Editor() {
       {/* Document header */}
       <div className="glass-subtle m-3 mb-0 p-3 flex items-center justify-between anim-slide-down">
         <div className="flex items-center gap-3">
-          <Type size={18} className="text-emerald-400 anim-float" />
+          <Type size={18} className={`text-emerald-400 ${shouldAnimate ? 'anim-float' : ''}`} />
           {titleEditing ? (
             <input
               type="text"
@@ -352,7 +357,7 @@ export function Editor() {
           {showSuggestion && suggestion && (
             <div className="absolute bottom-4 left-4 right-4 glass-subtle p-3 flex items-center justify-between anim-slide-up shadow-xl">
               <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-emerald-400 anim-pulse" />
+                <Sparkles size={16} className={`text-emerald-400 ${shouldAnimate ? 'anim-pulse' : ''}`} />
                 <span className="text-sm opacity-80 italic">
                   {suggestion.split(/\s+/).slice(0, acceptedWords + 1).join(' ')}
                   <span className="opacity-40"> {suggestion.split(/\s+/).slice(acceptedWords + 1).join(' ')}</span>

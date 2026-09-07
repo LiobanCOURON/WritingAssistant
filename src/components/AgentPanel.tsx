@@ -15,7 +15,12 @@ export function AgentPanel() {
     addAgentMessage, clearAgentMessages, agentOpen, setAgentOpen,
     getRAGContext, getNotesContext, updateChapterContent,
     addCharacter, addPlace, addMoment,
+    customAnimations, animationLevel,
   } = useApp();
+
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -126,7 +131,7 @@ export function AgentPanel() {
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Bot size={20} className="text-emerald-400 anim-pulse" />
+          <Bot size={20} className={`text-emerald-400 ${shouldAnimate ? 'anim-pulse' : ''}`} />
           <h2 className="text-lg font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
             {t('agent', language)}
           </h2>
@@ -190,7 +195,7 @@ export function AgentPanel() {
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {agentMessages.length === 0 && (
           <div className="text-center py-12 opacity-40">
-            <Bot size={48} className="mx-auto mb-3 opacity-30 anim-float" />
+            <Bot size={48} className={`mx-auto mb-3 opacity-30 ${shouldAnimate ? 'anim-float' : ''}`} />
             <p className="text-sm">{t('typeMessage', language)}</p>
           </div>
         )}

@@ -4,8 +4,12 @@ import { Theme } from '../types';
 import { Sun, Moon, Monitor, Check } from 'lucide-react';
 
 export function ThemeSwitcher() {
-  const { theme, setTheme } = useApp();
+  const { theme, setTheme, customAnimations, animationLevel } = useApp();
   const [isOpen, setIsOpen] = React.useState(false);
+
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   const themes: { value: Theme; label: string; icon: React.ElementType }[] = [
     { value: 'light', label: 'Clair', icon: Sun },
@@ -19,9 +23,9 @@ export function ThemeSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         className="glass-button flex items-center gap-2 text-sm px-3 py-2 hover-glow ripple"
       >
-        {theme === 'light' && <Sun size={16} className="text-yellow-400 anim-float" />}
-        {theme === 'dark' && <Moon size={16} className="text-blue-300 anim-float" />}
-        {theme === 'auto' && <Monitor size={16} className="text-emerald-400 anim-float" />}
+        {theme === 'light' && <Sun size={16} className={`text-yellow-400 ${shouldAnimate ? 'anim-float' : ''}`} />}
+        {theme === 'dark' && <Moon size={16} className={`text-blue-300 ${shouldAnimate ? 'anim-float' : ''}`} />}
+        {theme === 'auto' && <Monitor size={16} className={`text-emerald-400 ${shouldAnimate ? 'anim-float' : ''}`} />}
       </button>
 
       {isOpen && (

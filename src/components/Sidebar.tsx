@@ -14,7 +14,12 @@ export function Sidebar() {
     createProject, deleteProject, createFolder, deleteFolder,
     createChapter, deleteChapter, moveChapter, setActiveProject, setActiveFolder,
     setActiveChapter, addTag, removeTag, indexProject, setNotesOpen,
+    customAnimations, animationLevel,
   } = useApp();
+
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
@@ -384,7 +389,7 @@ export function Sidebar() {
         ) : (
           <button
             onClick={() => setShowNewProject(true)}
-            className="glass-button glass-button-primary w-full flex items-center justify-center gap-2 text-sm py-2 anim-pulse-subtle"
+            className={`glass-button glass-button-primary w-full flex items-center justify-center gap-2 text-sm py-2 ${shouldAnimate ? 'anim-pulse-subtle' : ''}`}
           >
             <Plus size={16} />
             <span>{t('newProject', language)}</span>

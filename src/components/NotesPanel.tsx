@@ -15,7 +15,12 @@ export function NotesPanel() {
     updateOverview, addCharacter, updateCharacter, deleteCharacter,
     addPlace, updatePlace, deletePlace,
     addMoment, updateMoment, deleteMoment,
+    customAnimations, animationLevel,
   } = useApp();
+
+  const shouldAnimate = animationLevel === 'all' || 
+                        animationLevel === 'chaos' || 
+                        (animationLevel === 'custom' && customAnimations.iconsBounce);
 
   const [activeTab, setActiveTab] = useState<NotesTab>('overview');
   const [editingChar, setEditingChar] = useState<string | null>(null);
@@ -38,7 +43,7 @@ export function NotesPanel() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <StickyNote size={20} className="text-purple-400 anim-pulse" />
+            <StickyNote size={20} className={`text-purple-400 ${shouldAnimate ? 'anim-pulse' : ''}`} />
             <h2 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
               {t('memory', language)} & Notes
             </h2>
