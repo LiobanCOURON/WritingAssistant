@@ -112,7 +112,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [animationLevel, setAnimationLevelState] = useState<AnimationLevel>(() => {
     const saved = localStorage.getItem('plumeai_animations');
-    return (saved as AnimationLevel) || 'all';
+    // Reset chaos mode if it was saved (too extreme by default)
+    if (saved === 'chaos') {
+      localStorage.removeItem('plumeai_animations');
+      return 'none';
+    }
+    return (saved as AnimationLevel) || 'none';
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
