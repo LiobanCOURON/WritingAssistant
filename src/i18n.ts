@@ -1,0 +1,431 @@
+import { Language } from './types';
+
+type TranslationKeys = {
+  appTitle: string;
+  projects: string;
+  newProject: string;
+  newDocument: string;
+  settings: string;
+  agent: string;
+  editor: string;
+  inlineEndpoint: string;
+  agentEndpoint: string;
+  apiKey: string;
+  model: string;
+  selectModel: string;
+  fetchModels: string;
+  save: string;
+  cancel: string;
+  delete: string;
+  confirm: string;
+  projectName: string;
+  projectDescription: string;
+  documentTitle: string;
+  sendMessage: string;
+  typeMessage: string;
+  thinking: string;
+  usingTool: string;
+  summarize: string;
+  expand: string;
+  rewrite: string;
+  correct: string;
+  translate: string;
+  analyze: string;
+  searchContext: string;
+  inlineSuggestion: string;
+  acceptSuggestion: string;
+  rejectSuggestion: string;
+  generating: string;
+  noProjects: string;
+  noDocuments: string;
+  welcome: string;
+  welcomeDesc: string;
+  language: string;
+  theme: string;
+  light: string;
+  dark: string;
+  auto: string;
+  close: string;
+  open: string;
+  export: string;
+  import: string;
+  wordCount: string;
+  charCount: string;
+  ragIndexing: string;
+  ragIndexed: string;
+  documentsIndexed: string;
+  agentTools: string;
+  toolResult: string;
+  applyToEditor: string;
+  clearChat: string;
+  endpointPlaceholder: string;
+  apiKeyPlaceholder: string;
+  modelsLoaded: string;
+  noModels: string;
+  error: string;
+  success: string;
+  projectCreated: string;
+  documentCreated: string;
+  deleteConfirm: string;
+  yes: string;
+  no: string;
+};
+
+const translations: Record<Language, TranslationKeys> = {
+  fr: {
+    appTitle: 'PlumeAI',
+    projects: 'Projets',
+    newProject: 'Nouveau Projet',
+    newDocument: 'Nouveau Document',
+    settings: 'Paramètres',
+    agent: 'Agent IA',
+    editor: 'Éditeur',
+    inlineEndpoint: 'Endpoint Inline',
+    agentEndpoint: 'Endpoint Agent',
+    apiKey: 'Clé API',
+    model: 'Modèle',
+    selectModel: 'Sélectionner un modèle',
+    fetchModels: 'Charger les modèles',
+    save: 'Sauvegarder',
+    cancel: 'Annuler',
+    delete: 'Supprimer',
+    confirm: 'Confirmer',
+    projectName: 'Nom du projet',
+    projectDescription: 'Description du projet',
+    documentTitle: 'Titre du document',
+    sendMessage: 'Envoyer',
+    typeMessage: 'Écrivez votre message...',
+    thinking: 'Réflexion en cours...',
+    usingTool: 'Utilisation de l\'outil',
+    summarize: 'Résumer',
+    expand: 'Développer',
+    rewrite: 'Réécrire',
+    correct: 'Corriger',
+    translate: 'Traduire',
+    analyze: 'Analyser',
+    searchContext: 'Rechercher dans le contexte',
+    inlineSuggestion: 'Suggestion IA',
+    acceptSuggestion: 'Accepter (Tab)',
+    rejectSuggestion: 'Rejeter (Esc)',
+    generating: 'Génération...',
+    noProjects: 'Aucun projet. Créez-en un pour commencer.',
+    noDocuments: 'Aucun document dans ce projet.',
+    welcome: 'Bienvenue sur PlumeAI',
+    welcomeDesc: 'Votre assistant de rédaction intelligent. Créez un projet pour commencer.',
+    language: 'Langue',
+    theme: 'Thème',
+    light: 'Clair',
+    dark: 'Sombre',
+    auto: 'Auto',
+    close: 'Fermer',
+    open: 'Ouvrir',
+    export: 'Exporter',
+    import: 'Importer',
+    wordCount: 'Mots',
+    charCount: 'Caractères',
+    ragIndexing: 'Indexation RAG...',
+    ragIndexed: 'Documents indexés',
+    documentsIndexed: 'documents indexés',
+    agentTools: 'Outils de l\'agent',
+    toolResult: 'Résultat de l\'outil',
+    applyToEditor: 'Appliquer à l\'éditeur',
+    clearChat: 'Effacer la conversation',
+    endpointPlaceholder: 'https://api.openai.com/v1',
+    apiKeyPlaceholder: 'sk-...',
+    modelsLoaded: 'modèles chargés',
+    noModels: 'Aucun modèle trouvé',
+    error: 'Erreur',
+    success: 'Succès',
+    projectCreated: 'Projet créé',
+    documentCreated: 'Document créé',
+    deleteConfirm: 'Êtes-vous sûr de vouloir supprimer ?',
+    yes: 'Oui',
+    no: 'Non',
+  },
+  es: {
+    appTitle: 'PlumeAI',
+    projects: 'Proyectos',
+    newProject: 'Nuevo Proyecto',
+    newDocument: 'Nuevo Documento',
+    settings: 'Configuración',
+    agent: 'Agente IA',
+    editor: 'Editor',
+    inlineEndpoint: 'Endpoint Inline',
+    agentEndpoint: 'Endpoint Agente',
+    apiKey: 'Clave API',
+    model: 'Modelo',
+    selectModel: 'Seleccionar modelo',
+    fetchModels: 'Cargar modelos',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    delete: 'Eliminar',
+    confirm: 'Confirmar',
+    projectName: 'Nombre del proyecto',
+    projectDescription: 'Descripción del proyecto',
+    documentTitle: 'Título del documento',
+    sendMessage: 'Enviar',
+    typeMessage: 'Escribe tu mensaje...',
+    thinking: 'Pensando...',
+    usingTool: 'Usando herramienta',
+    summarize: 'Resumir',
+    expand: 'Expandir',
+    rewrite: 'Reescribir',
+    correct: 'Corregir',
+    translate: 'Traducir',
+    analyze: 'Analizar',
+    searchContext: 'Buscar en contexto',
+    inlineSuggestion: 'Sugerencia IA',
+    acceptSuggestion: 'Aceptar (Tab)',
+    rejectSuggestion: 'Rechazar (Esc)',
+    generating: 'Generando...',
+    noProjects: 'Sin proyectos. Crea uno para empezar.',
+    noDocuments: 'Sin documentos en este proyecto.',
+    welcome: 'Bienvenido a PlumeAI',
+    welcomeDesc: 'Tu asistente de escritura inteligente. Crea un proyecto para empezar.',
+    language: 'Idioma',
+    theme: 'Tema',
+    light: 'Claro',
+    dark: 'Oscuro',
+    auto: 'Auto',
+    close: 'Cerrar',
+    open: 'Abrir',
+    export: 'Exportar',
+    import: 'Importar',
+    wordCount: 'Palabras',
+    charCount: 'Caracteres',
+    ragIndexing: 'Indexando RAG...',
+    ragIndexed: 'Documentos indexados',
+    documentsIndexed: 'documentos indexados',
+    agentTools: 'Herramientas del agente',
+    toolResult: 'Resultado de herramienta',
+    applyToEditor: 'Aplicar al editor',
+    clearChat: 'Borrar conversación',
+    endpointPlaceholder: 'https://api.openai.com/v1',
+    apiKeyPlaceholder: 'sk-...',
+    modelsLoaded: 'modelos cargados',
+    noModels: 'No se encontraron modelos',
+    error: 'Error',
+    success: 'Éxito',
+    projectCreated: 'Proyecto creado',
+    documentCreated: 'Documento creado',
+    deleteConfirm: '¿Estás seguro de que quieres eliminar?',
+    yes: 'Sí',
+    no: 'No',
+  },
+  zh: {
+    appTitle: 'PlumeAI',
+    projects: '项目',
+    newProject: '新项目',
+    newDocument: '新文档',
+    settings: '设置',
+    agent: 'AI代理',
+    editor: '编辑器',
+    inlineEndpoint: '内联端点',
+    agentEndpoint: '代理端点',
+    apiKey: 'API密钥',
+    model: '模型',
+    selectModel: '选择模型',
+    fetchModels: '加载模型',
+    save: '保存',
+    cancel: '取消',
+    delete: '删除',
+    confirm: '确认',
+    projectName: '项目名称',
+    projectDescription: '项目描述',
+    documentTitle: '文档标题',
+    sendMessage: '发送',
+    typeMessage: '输入消息...',
+    thinking: '思考中...',
+    usingTool: '使用工具',
+    summarize: '总结',
+    expand: '扩展',
+    rewrite: '重写',
+    correct: '纠正',
+    translate: '翻译',
+    analyze: '分析',
+    searchContext: '搜索上下文',
+    inlineSuggestion: 'AI建议',
+    acceptSuggestion: '接受 (Tab)',
+    rejectSuggestion: '拒绝 (Esc)',
+    generating: '生成中...',
+    noProjects: '没有项目。创建一个开始。',
+    noDocuments: '此项目中没有文档。',
+    welcome: '欢迎使用 PlumeAI',
+    welcomeDesc: '您的智能写作助手。创建项目开始。',
+    language: '语言',
+    theme: '主题',
+    light: '浅色',
+    dark: '深色',
+    auto: '自动',
+    close: '关闭',
+    open: '打开',
+    export: '导出',
+    import: '导入',
+    wordCount: '字数',
+    charCount: '字符数',
+    ragIndexing: 'RAG索引中...',
+    ragIndexed: '已索引文档',
+    documentsIndexed: '个文档已索引',
+    agentTools: '代理工具',
+    toolResult: '工具结果',
+    applyToEditor: '应用到编辑器',
+    clearChat: '清除对话',
+    endpointPlaceholder: 'https://api.openai.com/v1',
+    apiKeyPlaceholder: 'sk-...',
+    modelsLoaded: '个模型已加载',
+    noModels: '未找到模型',
+    error: '错误',
+    success: '成功',
+    projectCreated: '项目已创建',
+    documentCreated: '文档已创建',
+    deleteConfirm: '确定要删除吗？',
+    yes: '是',
+    no: '否',
+  },
+  de: {
+    appTitle: 'PlumeAI',
+    projects: 'Projekte',
+    newProject: 'Neues Projekt',
+    newDocument: 'Neues Dokument',
+    settings: 'Einstellungen',
+    agent: 'KI-Agent',
+    editor: 'Editor',
+    inlineEndpoint: 'Inline-Endpunkt',
+    agentEndpoint: 'Agent-Endpunkt',
+    apiKey: 'API-Schlüssel',
+    model: 'Modell',
+    selectModel: 'Modell auswählen',
+    fetchModels: 'Modelle laden',
+    save: 'Speichern',
+    cancel: 'Abbrechen',
+    delete: 'Löschen',
+    confirm: 'Bestätigen',
+    projectName: 'Projektname',
+    projectDescription: 'Projektbeschreibung',
+    documentTitle: 'Dokumenttitel',
+    sendMessage: 'Senden',
+    typeMessage: 'Nachricht eingeben...',
+    thinking: 'Denke nach...',
+    usingTool: 'Verwende Werkzeug',
+    summarize: 'Zusammenfassen',
+    expand: 'Erweitern',
+    rewrite: 'Umschreiben',
+    correct: 'Korrigieren',
+    translate: 'Übersetzen',
+    analyze: 'Analysieren',
+    searchContext: 'Im Kontext suchen',
+    inlineSuggestion: 'KI-Vorschlag',
+    acceptSuggestion: 'Akzeptieren (Tab)',
+    rejectSuggestion: 'Ablehnen (Esc)',
+    generating: 'Generiere...',
+    noProjects: 'Keine Projekte. Erstellen Sie eines.',
+    noDocuments: 'Keine Dokumente in diesem Projekt.',
+    welcome: 'Willkommen bei PlumeAI',
+    welcomeDesc: 'Ihr intelligenter Schreibassistent. Erstellen Sie ein Projekt.',
+    language: 'Sprache',
+    theme: 'Thema',
+    light: 'Hell',
+    dark: 'Dunkel',
+    auto: 'Auto',
+    close: 'Schließen',
+    open: 'Öffnen',
+    export: 'Exportieren',
+    import: 'Importieren',
+    wordCount: 'Wörter',
+    charCount: 'Zeichen',
+    ragIndexing: 'RAG-Indexierung...',
+    ragIndexed: 'Dokumente indexiert',
+    documentsIndexed: 'Dokumente indexiert',
+    agentTools: 'Agent-Werkzeuge',
+    toolResult: 'Werkzeugergebnis',
+    applyToEditor: 'Auf Editor anwenden',
+    clearChat: 'Chat löschen',
+    endpointPlaceholder: 'https://api.openai.com/v1',
+    apiKeyPlaceholder: 'sk-...',
+    modelsLoaded: 'Modelle geladen',
+    noModels: 'Keine Modelle gefunden',
+    error: 'Fehler',
+    success: 'Erfolg',
+    projectCreated: 'Projekt erstellt',
+    documentCreated: 'Dokument erstellt',
+    deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten?',
+    yes: 'Ja',
+    no: 'Nein',
+  },
+  ja: {
+    appTitle: 'PlumeAI',
+    projects: 'プロジェクト',
+    newProject: '新規プロジェクト',
+    newDocument: '新規ドキュメント',
+    settings: '設定',
+    agent: 'AIエージェント',
+    editor: 'エディタ',
+    inlineEndpoint: 'インラインエンドポイント',
+    agentEndpoint: 'エージェントエンドポイント',
+    apiKey: 'APIキー',
+    model: 'モデル',
+    selectModel: 'モデルを選択',
+    fetchModels: 'モデルを読み込む',
+    save: '保存',
+    cancel: 'キャンセル',
+    delete: '削除',
+    confirm: '確認',
+    projectName: 'プロジェクト名',
+    projectDescription: 'プロジェクト説明',
+    documentTitle: 'ドキュメントタイトル',
+    sendMessage: '送信',
+    typeMessage: 'メッセージを入力...',
+    thinking: '考え中...',
+    usingTool: 'ツール使用中',
+    summarize: '要約',
+    expand: '展開',
+    rewrite: '書き直し',
+    correct: '修正',
+    translate: '翻訳',
+    analyze: '分析',
+    searchContext: 'コンテキスト検索',
+    inlineSuggestion: 'AI提案',
+    acceptSuggestion: '受け入れる (Tab)',
+    rejectSuggestion: '拒否 (Esc)',
+    generating: '生成中...',
+    noProjects: 'プロジェクトがありません。作成してください。',
+    noDocuments: 'このプロジェクトにドキュメントがありません。',
+    welcome: 'PlumeAIへようこそ',
+    welcomeDesc: 'あなたのスマートライティングアシスタント。プロジェクトを作成してください。',
+    language: '言語',
+    theme: 'テーマ',
+    light: 'ライト',
+    dark: 'ダーク',
+    auto: '自動',
+    close: '閉じる',
+    open: '開く',
+    export: 'エクスポート',
+    import: 'インポート',
+    wordCount: '単語数',
+    charCount: '文字数',
+    ragIndexing: 'RAGインデックス中...',
+    ragIndexed: 'インデックス済みドキュメント',
+    documentsIndexed: 'ドキュメントがインデックス済み',
+    agentTools: 'エージェントツール',
+    toolResult: 'ツール結果',
+    applyToEditor: 'エディタに適用',
+    clearChat: 'チャットをクリア',
+    endpointPlaceholder: 'https://api.openai.com/v1',
+    apiKeyPlaceholder: 'sk-...',
+    modelsLoaded: 'モデルが読み込まれました',
+    noModels: 'モデルが見つかりません',
+    error: 'エラー',
+    success: '成功',
+    projectCreated: 'プロジェクトが作成されました',
+    documentCreated: 'ドキュメントが作成されました',
+    deleteConfirm: '削除してもよろしいですか？',
+    yes: 'はい',
+    no: 'いいえ',
+  },
+};
+
+export function t(key: keyof TranslationKeys, lang: Language): string {
+  return translations[lang][key] || translations.fr[key] || key;
+}
+
+export default translations;
