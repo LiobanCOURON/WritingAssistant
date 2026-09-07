@@ -6,14 +6,14 @@ import { AgentMessage } from '../types';
 import {
   Send, Bot, User, Wrench, Trash2, X,
   BookOpen, PenTool, RefreshCw, CheckCircle, Search, BarChart3,
-  ChevronDown, Copy
+  ChevronDown, Copy, Wand2, Languages, Lightbulb
 } from 'lucide-react';
 
 export function AgentPanel() {
   const {
-    language, agentMessages, activeDocument, activeProject, apiConfig,
+    language, agentMessages, activeChapter, activeProject, activeFolder, apiConfig,
     addAgentMessage, clearAgentMessages, agentOpen, setAgentOpen,
-    getRAGContext, updateDocumentContent,
+    getRAGContext, updateChapterContent,
   } = useApp();
 
   const [input, setInput] = useState('');
@@ -31,7 +31,7 @@ export function AgentPanel() {
       addAgentMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: '⚠️ Veuillez configurer l\'endpoint Agent dans les paramètres.',
+        content: '⚠️ Veuillez configurer l\'endpoint Agent dans les paramètres (roue dentée en haut à droite).',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -50,15 +50,16 @@ export function AgentPanel() {
     try {
       // Get RAG context
       const ragContext = getRAGContext(input);
-      const projectContext = activeDocument
-        ? `Document actuel: "${activeDocument.title}"\nContenu:\n${activeDocument.content.substring(0, 2000)}`
+      const projectContext = activeChapter
+        ? `Document actuel: "${activeChapter.title}" (dans le dossier "${activeFolder?.name}")\nContenu:\n${activeChapter.content.substring(0, 2000)}`
         : '';
 
       const allMessages = [...agentMessages, userMsg];
-      const documents = activeProject?.documents.map(d => ({
-        title: d.title,
-        content: d.content,
-      })) || [];
+
+      // Get all chapters content for tools
+      const allChapters = activeProject?.folders.flatMap(f =>
+        f.chapters.map(c => ({ title: `${f.name}/${c.title}`, content: c.content }))
+      ) || [];
 
       const response = await agentChat(apiConfig, allMessages, ragContext, projectContext);
 
@@ -75,8 +76,7 @@ export function AgentPanel() {
           };
           addAgentMessage(toolMsg);
 
-          // Execute tool locally
-          const result = executeTool(toolCall, documents);
+          const result = executeTool(toolCall, allChapters);
           const resultMsg: AgentMessage = {
             id: crypto.randomUUID(),
             role: 'tool',
@@ -90,7 +90,7 @@ export function AgentPanel() {
         // Get final response with tool results
         const finalResponse = await agentChat(
           apiConfig,
-          [...allMessages, { ...userMsg, id: crypto.randomUUID(), role: 'user' as const, content: input, timestamp: '' }],
+          [...allMessages],
           ragContext,
           projectContext
         );
@@ -122,12 +122,15 @@ export function AgentPanel() {
   };
 
   const quickActions = [
-    { icon: BookOpen, label: t('summarize', language), action: 'Résume le document actuel.' },
-    { icon: PenTool, label: t('expand', language), action: 'Développe et enrichis le document actuel.' },
-    { icon: RefreshCw, label: t('rewrite', language), action: 'Réécris le document actuel dans un style plus littéraire.' },
+    { icon: BookOpen, label: t('summarize', language), action: 'Résume le document actuel de manière concise.' },
+    { icon: PenTool, label: t('expand', language), action: 'Développe et enrichis le document actuel avec plus de détails.' },
+    { icon: RefreshCw, label: t('rewrite', language), action: 'Réécris le document actuel dans un style plus littéraire et élégant.' },
     { icon: CheckCircle, label: t('correct', language), action: 'Corrige les fautes de grammaire et d\'orthographe du document actuel.' },
-    { icon: Search, label: t('searchContext', language), action: 'Recherche les informations clés dans les documents du projet.' },
-    { icon: BarChart3, label: t('analyze', language), action: 'Analyse la structure et les thèmes du document actuel.' },
+    { icon: Search, label: t('searchContext', language), action: 'Recherche les informations clés dans tous les documents du projet.' },
+    { icon: BarChart3, label: t('analyze', language), action: 'Analyse la structure, le style et les thèmes du document actuel.' },
+    { icon: Wand2, label: t('agentTools', language), action: 'Génère un plan structuré pour la suite du document.' },
+    { icon: Languages, label: t('translate', language), action: 'Traduis le document actuel en anglais.' },
+    { icon: Lightbulb, label: 'Style', action: 'Améliore le style d\'écriture : vocabulaire, fluidité et rythme.' },
   ];
 
   const handleQuickAction = (action: string) => {
@@ -139,8 +142,8 @@ export function AgentPanel() {
   };
 
   const applyToEditor = (text: string) => {
-    if (activeDocument) {
-      updateDocumentContent(activeDocument.id, activeDocument.content + '\n\n' + text);
+    if (activeChapter && activeProject && activeFolder) {
+      updateChapterContent(activeProject.id, activeFolder.id, activeChapter.id, activeChapter.content + '\n\n' + text);
     }
   };
 
@@ -193,6 +196,7 @@ export function AgentPanel() {
           <div className="text-center py-12 opacity-40">
             <Bot size={48} className="mx-auto mb-3 opacity-30" />
             <p className="text-sm">{t('typeMessage', language)}</p>
+            <p className="text-xs mt-2 opacity-50">Utilisez /commande dans l'éditeur pour des actions rapides</p>
           </div>
         )}
         {agentMessages.map(msg => (
@@ -214,7 +218,6 @@ export function AgentPanel() {
             </div>
             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
 
-            {/* Tool result expansion */}
             {msg.toolResult && (
               <div className="mt-2">
                 <button
@@ -237,7 +240,6 @@ export function AgentPanel() {
               </div>
             )}
 
-            {/* Actions for assistant messages */}
             {msg.role === 'assistant' && msg.content && (
               <div className="flex gap-1 mt-2">
                 <button

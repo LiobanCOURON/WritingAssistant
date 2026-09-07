@@ -1,20 +1,49 @@
 export type Language = 'fr' | 'es' | 'zh' | 'de' | 'ja';
 export type Theme = 'light' | 'dark' | 'auto';
+export type AnimationLevel = 'none' | 'few' | 'most' | 'all' | 'custom';
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface Chapter {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[]; // tag ids
+  notes: ProjectNote[];
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  chapters: Chapter[];
+  tags: string[];
+  order: number;
+  collapsed: boolean;
+}
+
+export interface ProjectNote {
+  id: string;
+  title: string;
+  content: string;
+  chapterId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Project {
   id: string;
   name: string;
   description: string;
-  documents: Document[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Document {
-  id: string;
-  title: string;
-  content: string;
-  projectId: string;
+  folders: Folder[];
+  notes: ProjectNote[]; // project-level notes
+  tags: Tag[];
   createdAt: string;
   updatedAt: string;
 }
@@ -40,13 +69,21 @@ export interface APIConfig {
 
 export interface RAGChunk {
   id: string;
-  documentId: string;
-  documentTitle: string;
+  chapterId: string;
+  chapterTitle: string;
+  folderName: string;
   content: string;
-  embedding?: number[];
 }
 
 export interface InlineSuggestion {
   text: string;
+  words: string[];
   position: number;
+}
+
+export interface SlashCommand {
+  name: string;
+  description: string;
+  icon: string;
+  action: string;
 }

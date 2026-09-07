@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AppProvider, useApp } from './contexts';
 import { t } from './i18n';
 import { Sidebar } from './components/Sidebar';
@@ -11,21 +11,26 @@ import { Menu, Bot, Settings, PanelLeftOpen, PanelRightOpen } from 'lucide-react
 
 function AppContent() {
   const {
-    language, sidebarOpen, agentOpen, settingsOpen,
+    language, sidebarOpen, agentOpen, settingsOpen, animationLevel,
     setSidebarOpen, setAgentOpen, setSettingsOpen,
   } = useApp();
+
+  // Apply animation level to DOM
+  useEffect(() => {
+    document.documentElement.setAttribute('data-animation', animationLevel);
+  }, [animationLevel]);
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <header className="glass-subtle m-2 mb-0 px-4 py-2 flex items-center justify-between shrink-0 z-10">
+      <header className="glass-subtle m-2 mb-0 px-4 py-2 flex items-center justify-between shrink-0 z-10 animate-fade-in">
         <div className="flex items-center gap-3">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+          <div className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center transition-transform hover:scale-110 hover:rotate-3">
               <span className="text-white font-bold text-sm">P</span>
             </div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent hidden sm:block">
+            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent hidden sm:block animate-gradient">
               {t('appTitle', language)}
             </h1>
           </div>
@@ -67,13 +72,17 @@ function AppContent() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden p-2 gap-2">
         {/* Sidebar */}
-        <Sidebar />
+        <div className={`transition-all duration-300 ${sidebarOpen ? 'animate-slide-left' : ''}`}>
+          <Sidebar />
+        </div>
 
         {/* Editor */}
         <Editor />
 
         {/* Agent Panel */}
-        <AgentPanel />
+        <div className={`transition-all duration-300 ${agentOpen ? 'animate-slide-right' : ''}`}>
+          <AgentPanel />
+        </div>
       </div>
 
       {/* Settings Modal */}

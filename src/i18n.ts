@@ -69,6 +69,21 @@ type TranslationKeys = {
   deleteConfirm: string;
   yes: string;
   no: string;
+  slashCommands: string;
+  nextWord: string;
+  acceptAll: string;
+  importFile: string;
+  memory: string;
+  addNote: string;
+  folder: string;
+  chapter: string;
+  tags: string;
+  animations: string;
+  none: string;
+  few: string;
+  more: string;
+  all: string;
+  custom: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -141,6 +156,21 @@ const translations: Record<Language, TranslationKeys> = {
     deleteConfirm: 'Êtes-vous sûr de vouloir supprimer ?',
     yes: 'Oui',
     no: 'Non',
+    slashCommands: 'Commandes',
+    nextWord: 'Mot suivant',
+    acceptAll: 'Tout accepter',
+    importFile: 'Importer un fichier',
+    memory: 'Mémoire',
+    addNote: 'Ajouter une note',
+    folder: 'Dossier',
+    chapter: 'Chapitre',
+    tags: 'Tags',
+    animations: 'Animations',
+    none: 'Aucune',
+    few: 'Peu',
+    more: 'Plus',
+    all: 'Tout',
+    custom: 'Custom',
   },
   es: {
     appTitle: 'PlumeAI',
@@ -211,6 +241,21 @@ const translations: Record<Language, TranslationKeys> = {
     deleteConfirm: '¿Estás seguro de que quieres eliminar?',
     yes: 'Sí',
     no: 'No',
+    slashCommands: 'Comandos',
+    nextWord: 'Siguiente palabra',
+    acceptAll: 'Aceptar todo',
+    importFile: 'Importar archivo',
+    memory: 'Memoria',
+    addNote: 'Agregar nota',
+    folder: 'Carpeta',
+    chapter: 'Capítulo',
+    tags: 'Etiquetas',
+    animations: 'Animaciones',
+    none: 'Ninguna',
+    few: 'Pocas',
+    more: 'Más',
+    all: 'Todas',
+    custom: 'Personalizado',
   },
   zh: {
     appTitle: 'PlumeAI',
@@ -281,6 +326,21 @@ const translations: Record<Language, TranslationKeys> = {
     deleteConfirm: '确定要删除吗？',
     yes: '是',
     no: '否',
+    slashCommands: '命令',
+    nextWord: '下一个词',
+    acceptAll: '全部接受',
+    importFile: '导入文件',
+    memory: '记忆',
+    addNote: '添加笔记',
+    folder: '文件夹',
+    chapter: '章节',
+    tags: '标签',
+    animations: '动画',
+    none: '无',
+    few: '少量',
+    more: '更多',
+    all: '全部',
+    custom: '自定义',
   },
   de: {
     appTitle: 'PlumeAI',
@@ -351,6 +411,21 @@ const translations: Record<Language, TranslationKeys> = {
     deleteConfirm: 'Sind Sie sicher, dass Sie löschen möchten?',
     yes: 'Ja',
     no: 'Nein',
+    slashCommands: 'Befehle',
+    nextWord: 'Nächstes Wort',
+    acceptAll: 'Alle akzeptieren',
+    importFile: 'Datei importieren',
+    memory: 'Gedächtnis',
+    addNote: 'Notiz hinzufügen',
+    folder: 'Ordner',
+    chapter: 'Kapitel',
+    tags: 'Tags',
+    animations: 'Animationen',
+    none: 'Keine',
+    few: 'Wenige',
+    more: 'Mehr',
+    all: 'Alle',
+    custom: 'Benutzerdefiniert',
   },
   ja: {
     appTitle: 'PlumeAI',
@@ -421,6 +496,21 @@ const translations: Record<Language, TranslationKeys> = {
     deleteConfirm: '削除してもよろしいですか？',
     yes: 'はい',
     no: 'いいえ',
+    slashCommands: 'コマンド',
+    nextWord: '次の単語',
+    acceptAll: 'すべて受け入れる',
+    importFile: 'ファイルをインポート',
+    memory: 'メモリ',
+    addNote: 'ノートを追加',
+    folder: 'フォルダー',
+    chapter: '章',
+    tags: 'タグ',
+    animations: 'アニメーション',
+    none: 'なし',
+    few: '少ない',
+    more: 'もっと',
+    all: 'すべて',
+    custom: 'カスタム',
   },
 };
 
