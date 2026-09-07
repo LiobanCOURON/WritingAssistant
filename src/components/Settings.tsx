@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts';
 import { t } from '../i18n';
-import { fetchModels } from '../services';
 import { AnimationLevel } from '../types';
+import { fetchModels } from '../services';
 import {
-  X, Key, Globe, Cpu, Zap, Check, Loader2,
-  Sparkles, Monitor, Sun, Moon, Palette
+  X, Key, Server, Cpu, Sparkles, Check, Loader2,
+  Sun, Moon, Monitor, Zap, Wand2, Palette
 } from 'lucide-react';
 
 export function SettingsModal() {
   const {
-    language, apiConfig, theme, animationLevel, settingsOpen,
-    setSettingsOpen, setApiConfig, setTheme, setAnimationLevel,
+    language, settingsOpen, setSettingsOpen,
+    apiConfig, updateAPIConfig,
+    theme, setTheme,
+    animationLevel, setAnimationLevel,
   } = useApp();
 
   const [inlineEndpoint, setInlineEndpoint] = useState(apiConfig.inlineEndpoint);
@@ -22,9 +24,8 @@ export function SettingsModal() {
   const [agentModel, setAgentModel] = useState(apiConfig.agentModel);
   const [inlineModels, setInlineModels] = useState<string[]>(apiConfig.availableModels);
   const [agentModels, setAgentModels] = useState<string[]>([]);
-  const [loadingInlineModels, setLoadingInlineModels] = useState(false);
-  const [loadingAgentModels, setLoadingAgentModels] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [loadingInline, setLoadingInline] = useState(false);
+  const [loadingAgent, setLoadingAgent] = useState(false);
 
   useEffect(() => {
     if (settingsOpen) {
@@ -38,68 +39,125 @@ export function SettingsModal() {
   }, [settingsOpen, apiConfig]);
 
   const handleFetchInlineModels = async () => {
-    if (!inlineEndpoint || !inlineApiKey) return;
-    setLoadingInlineModels(true);
+    if (!inlineEndpoint) return;
+    setLoadingInline(true);
     const models = await fetchModels(inlineEndpoint, inlineApiKey);
     setInlineModels(models);
-    setLoadingInlineModels(false);
+    updateAPIConfig({ availableModels: models });
+    setLoadingInline(false);
   };
 
   const handleFetchAgentModels = async () => {
-    if (!agentEndpoint || !agentApiKey) return;
-    setLoadingAgentModels(true);
+    if (!agentEndpoint) return;
+    setLoadingAgent(true);
     const models = await fetchModels(agentEndpoint, agentApiKey);
     setAgentModels(models);
-    setLoadingAgentModels(false);
+    setLoadingAgent(false);
   };
 
   const handleSave = () => {
-    setApiConfig({
+    updateAPIConfig({
       inlineEndpoint,
       inlineApiKey,
       inlineModel,
       agentEndpoint,
       agentApiKey,
       agentModel,
-      availableModels: [...new Set([...inlineModels, ...agentModels])],
     });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSettingsOpen(false);
   };
 
   if (!settingsOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with liquid glass */}
-      <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-md"
-        onClick={() => setSettingsOpen(false)}
-      />
+  const animationOptions: { value: AnimationLevel; label: string; icon: React.ReactNode }[] = [
+    { value: 'none', label: t('none', language), icon: <Zap size={14} className="opacity-30" /> },
+    { value: 'few', label: t('few', language), icon: <Zap size={14} className="opacity-60" /> },
+    { value: 'more', label: t('more', language), icon: <Sparkles size={14} /> },
+    { value: 'all', label: t('all', language), icon: <Wand2 size={14} className="text-emerald-400" /> },
+    { value: 'custom', label: t('custom', language), icon: <Palette size={14} className="text-purple-400" /> },
+  ];
 
-      {/* Modal */}
-      <div className="glass relative w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade-in">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSettingsOpen(false)} />
+      <div className="glass w-full max-w-2xl max-h-[85vh] overflow-y-auto relative anim-scale-in p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent flex items-center gap-2">
+            <Sparkles size={24} className="text-emerald-400" />
             {t('settings', language)}
           </h2>
-          <button onClick={() => setSettingsOpen(false)} className="p-2 rounded-lg hover:bg-white/10">
+          <button
+            onClick={() => setSettingsOpen(false)}
+            className="p-2 rounded-lg hover:bg-white/10 transition-all hover-glow"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {/* API Configuration */}
         <div className="space-y-6">
-          {/* Inline AI */}
-          <div className="glass-subtle p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles size={18} className="text-blue-400" />
-              <h3 className="font-semibold">{t('inlineEndpoint', language)} (Suggestions)</h3>
+          {/* Theme */}
+          <section className="glass-subtle p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 opacity-80">
+              <Monitor size={16} />
+              {t('theme', language)}
+            </h3>
+            <div className="flex gap-2">
+              {([
+                { value: 'light', label: t('light', language), icon: <Sun size={16} /> },
+                { value: 'dark', label: t('dark', language), icon: <Moon size={16} /> },
+                { value: 'auto', label: t('auto', language), icon: <Monitor size={16} /> },
+              ] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTheme(opt.value)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover-glow anim-scale-hover ${
+                    theme === opt.value
+                      ? 'bg-gradient-to-r from-blue-500/30 to-emerald-500/30 border border-emerald-500/40'
+                      : 'glass-button'
+                  }`}
+                >
+                  {opt.icon}
+                  <span className="text-sm">{opt.label}</span>
+                  {theme === opt.value && <Check size={14} className="text-emerald-400" />}
+                </button>
+              ))}
             </div>
+          </section>
+
+          {/* Animations */}
+          <section className="glass-subtle p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 opacity-80">
+              <Sparkles size={16} />
+              {t('animations', language)}
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              {animationOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setAnimationLevel(opt.value)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all hover-glow anim-scale-hover ${
+                    animationLevel === opt.value
+                      ? 'bg-gradient-to-r from-blue-500/30 to-emerald-500/30 border border-emerald-500/40'
+                      : 'glass-button'
+                  }`}
+                >
+                  {opt.icon}
+                  <span className="text-sm">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Inline API */}
+          <section className="glass-subtle p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 opacity-80">
+              <Cpu size={16} />
+              {t('inlineEndpoint', language)}
+            </h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs opacity-60 mb-1 block">Endpoint</label>
+                <label className="text-xs opacity-50 mb-1 block">Endpoint</label>
                 <input
                   type="text"
                   value={inlineEndpoint}
@@ -109,7 +167,7 @@ export function SettingsModal() {
                 />
               </div>
               <div>
-                <label className="text-xs opacity-60 mb-1 block">{t('apiKey', language)}</label>
+                <label className="text-xs opacity-50 mb-1 block">{t('apiKey', language)}</label>
                 <input
                   type="password"
                   value={inlineApiKey}
@@ -118,41 +176,46 @@ export function SettingsModal() {
                   className="glass-input w-full px-3 py-2 text-sm"
                 />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleFetchInlineModels}
-                  disabled={loadingInlineModels || !inlineEndpoint}
-                  className="glass-button text-xs flex items-center gap-2"
-                >
-                  {loadingInlineModels ? <Loader2 size={12} className="animate-spin" /> : <Globe size={12} />}
-                  {t('fetchModels', language)}
-                </button>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs opacity-50">{t('model', language)}</label>
+                  <button
+                    onClick={handleFetchInlineModels}
+                    disabled={loadingInline || !inlineEndpoint}
+                    className="text-xs flex items-center gap-1 px-2 py-1 rounded-md glass-button hover-glow anim-scale-hover"
+                  >
+                    {loadingInline ? <Loader2 size={12} className="animate-spin" /> : <Server size={12} />}
+                    {t('fetchModels', language)}
+                  </button>
+                </div>
                 <select
                   value={inlineModel}
                   onChange={e => setInlineModel(e.target.value)}
-                  className="glass-input flex-1 px-3 py-2 text-sm"
+                  className="glass-select w-full px-3 py-2 text-sm"
                 >
                   <option value="">{t('selectModel', language)}</option>
                   {inlineModels.map(m => (
-                    <option key={m} value={m} className="bg-slate-800">{m}</option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+                {inlineModels.length > 0 && (
+                  <p className="text-xs text-emerald-400 mt-1">
+                    ✓ {inlineModels.length} {t('modelsLoaded', language)}
+                  </p>
+                )}
               </div>
-              {inlineModels.length > 0 && (
-                <p className="text-xs text-emerald-400">{inlineModels.length} {t('modelsLoaded', language)}</p>
-              )}
             </div>
-          </div>
+          </section>
 
-          {/* Agent AI */}
-          <div className="glass-subtle p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Cpu size={18} className="text-emerald-400" />
-              <h3 className="font-semibold">{t('agentEndpoint', language)} (Agent)</h3>
-            </div>
+          {/* Agent API */}
+          <section className="glass-subtle p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 opacity-80">
+              <Sparkles size={16} />
+              {t('agentEndpoint', language)}
+            </h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs opacity-60 mb-1 block">Endpoint</label>
+                <label className="text-xs opacity-50 mb-1 block">Endpoint</label>
                 <input
                   type="text"
                   value={agentEndpoint}
@@ -162,7 +225,7 @@ export function SettingsModal() {
                 />
               </div>
               <div>
-                <label className="text-xs opacity-60 mb-1 block">{t('apiKey', language)}</label>
+                <label className="text-xs opacity-50 mb-1 block">{t('apiKey', language)}</label>
                 <input
                   type="password"
                   value={agentApiKey}
@@ -171,95 +234,51 @@ export function SettingsModal() {
                   className="glass-input w-full px-3 py-2 text-sm"
                 />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleFetchAgentModels}
-                  disabled={loadingAgentModels || !agentEndpoint}
-                  className="glass-button text-xs flex items-center gap-2"
-                >
-                  {loadingAgentModels ? <Loader2 size={12} className="animate-spin" /> : <Globe size={12} />}
-                  {t('fetchModels', language)}
-                </button>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs opacity-50">{t('model', language)}</label>
+                  <button
+                    onClick={handleFetchAgentModels}
+                    disabled={loadingAgent || !agentEndpoint}
+                    className="text-xs flex items-center gap-1 px-2 py-1 rounded-md glass-button hover-glow anim-scale-hover"
+                  >
+                    {loadingAgent ? <Loader2 size={12} className="animate-spin" /> : <Server size={12} />}
+                    {t('fetchModels', language)}
+                  </button>
+                </div>
                 <select
                   value={agentModel}
                   onChange={e => setAgentModel(e.target.value)}
-                  className="glass-input flex-1 px-3 py-2 text-sm"
+                  className="glass-select w-full px-3 py-2 text-sm"
                 >
                   <option value="">{t('selectModel', language)}</option>
                   {agentModels.map(m => (
-                    <option key={m} value={m} className="bg-slate-800">{m}</option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+                {agentModels.length > 0 && (
+                  <p className="text-xs text-emerald-400 mt-1">
+                    ✓ {agentModels.length} {t('modelsLoaded', language)}
+                  </p>
+                )}
               </div>
-              {agentModels.length > 0 && (
-                <p className="text-xs text-emerald-400">{agentModels.length} {t('modelsLoaded', language)}</p>
-              )}
             </div>
-          </div>
-
-          {/* Theme */}
-          <div className="glass-subtle p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Palette size={18} className="text-purple-400" />
-              <h3 className="font-semibold">{t('theme', language)}</h3>
-            </div>
-            <div className="flex gap-2">
-              {[
-                { value: 'light' as const, icon: Sun, label: t('light', language) },
-                { value: 'dark' as const, icon: Moon, label: t('dark', language) },
-                { value: 'auto' as const, icon: Monitor, label: t('auto', language) },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTheme(opt.value)}
-                  className={`glass-button flex items-center gap-2 flex-1 justify-center ${
-                    theme === opt.value ? 'ring-2 ring-emerald-400' : ''
-                  }`}
-                >
-                  <opt.icon size={16} />
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Animation Level */}
-          <div className="glass-subtle p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Zap size={18} className="text-yellow-400" />
-              <h3 className="font-semibold">Animations</h3>
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {([
-                { value: 'none' as const, label: 'Aucune', emoji: '🚫' },
-                { value: 'few' as const, label: 'Peu', emoji: '🔹' },
-                { value: 'most' as const, label: 'Plus', emoji: '✨' },
-                { value: 'all' as const, label: 'Tout', emoji: '🎆' },
-                { value: 'custom' as const, label: 'Custom', emoji: '⚙️' },
-              ]).map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setAnimationLevel(opt.value)}
-                  className={`glass-button flex flex-col items-center gap-1 py-2 ${
-                    animationLevel === opt.value ? 'ring-2 ring-emerald-400' : ''
-                  }`}
-                >
-                  <span className="text-lg">{opt.emoji}</span>
-                  <span className="text-xs">{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          </section>
         </div>
 
-        {/* Save button */}
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={() => setSettingsOpen(false)} className="glass-button">
-            {t('cancel', language)}
+        {/* Footer */}
+        <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
+          <button
+            onClick={handleSave}
+            className="glass-button glass-button-primary flex-1 py-2.5 anim-scale-hover hover-glow"
+          >
+            {t('save', language)}
           </button>
-          <button onClick={handleSave} className="glass-button glass-button-primary flex items-center gap-2">
-            {saved ? <Check size={16} /> : null}
-            {saved ? t('success', language) : t('save', language)}
+          <button
+            onClick={() => setSettingsOpen(false)}
+            className="glass-button flex-1 py-2.5 anim-scale-hover hover-glow"
+          >
+            {t('cancel', language)}
           </button>
         </div>
       </div>

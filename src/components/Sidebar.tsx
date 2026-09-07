@@ -1,355 +1,346 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts';
 import { t } from '../i18n';
-import { importFile } from '../services';
 import {
-  FolderOpen, FileText, Plus, Trash2, ChevronRight, ChevronDown,
-  X, Search, Tag, StickyNote, Upload, FolderPlus, FilePlus
+  FolderOpen, FileText, Plus, Trash2, ChevronRight, X,
+  Tag, Search, BookOpen, Users, MapPin, Clock, StickyNote,
+  Upload, FolderPlus, FilePlus
 } from 'lucide-react';
 
 export function Sidebar() {
   const {
-    language, projects, activeProject, activeProjectId, activeFolderId, activeChapterId,
-    sidebarOpen, searchQuery,
-    setActiveProject, setActiveFolder, setActiveChapter,
-    createProject, deleteProject,
-    createFolder, deleteFolder, toggleFolderCollapse,
-    createChapter, deleteChapter,
-    createTag, deleteTag,
-    addNote,
-    setSearchQuery,
+    language, projects, activeProjectId, activeFolderId, activeChapterId,
+    activeProject, sidebarOpen,
+    createProject, deleteProject, createFolder, deleteFolder,
+    createChapter, deleteChapter, setActiveProject, setActiveFolder,
+    setActiveChapter, addTag, removeTag, indexProject, setNotesOpen,
   } = useApp();
 
-  const [showNewProject, setShowNewProject] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDesc, setNewProjectDesc] = useState('');
   const [newFolderName, setNewFolderName] = useState('');
-  const [showNewFolder, setShowNewFolder] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState('');
-  const [showNewChapter, setShowNewChapter] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#3b82f6');
-  const [showNewTag, setShowNewTag] = useState(false);
-  const [showNotes, setShowNotes] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [showNewChapter, setShowNewChapter] = useState<string | null>(null);
+  const [newTag, setNewTag] = useState('');
+  const [showImport, setShowImport] = useState(false);
 
   if (!sidebarOpen) return null;
 
-  const filteredFolders = activeProject?.folders.filter(f => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    if (f.name.toLowerCase().includes(q)) return true;
-    return f.chapters.some(c => c.title.toLowerCase().includes(q) || c.tags.some(tagId => {
-      const tag = activeProject.tags.find(t => t.id === tagId);
-      return tag?.name.toLowerCase().includes(q);
-    }));
-  }) || [];
+  const filteredProjects = projects.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    p.folders.some(f =>
+      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      f.chapters.some(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  );
 
-  const handleImportFile = async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt,.md,.pdf,.docx,.doc';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file || !activeProjectId) return;
-      const text = await importFile(file);
-      // Create a new folder + chapter with the imported content
-      const folderName = file.name.replace(/\.[^.]+$/, '');
+  const toggleFolder = (folderId: string) => {
+    const next = new Set(collapsedFolders);
+    if (next.has(folderId)) next.delete(folderId);
+    else next.add(folderId);
+    setCollapsedFolders(next);
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeProjectId) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target?.result as string;
+      // Create a folder and chapter from the file
+      const folderName = file.name.replace(/\.[^/.]+$/, '');
       createFolder(activeProjectId, folderName);
-      // We need to wait for folder creation, use timeout
+      // We need the folder ID - get it from the updated project
       setTimeout(() => {
-        const project = projects.find(p => p.id === activeProjectId);
-        const folder = project?.folders[project.folders.length - 1];
-        if (folder) {
-          createChapter(activeProjectId, folder.id, folderName);
-          setTimeout(() => {
-            const updatedProject = projects.find(p => p.id === activeProjectId);
-            const updatedFolder = updatedProject?.folders.find(f => f.id === folder.id);
-            const chapter = updatedFolder?.chapters[updatedFolder.chapters.length - 1];
-            if (chapter) {
-              // We need to import this content via the context
-              const event = new CustomEvent('import-content', { detail: { chapterId: chapter.id, folderId: folder.id, content: text } });
-              window.dispatchEvent(event);
-            }
-          }, 100);
+        const proj = projects.find(p => p.id === activeProjectId);
+        const newFolder = proj?.folders.find(f => f.name === folderName);
+        if (newFolder) {
+          createChapter(newFolder.id, file.name);
+          // Content will be set after chapter creation
         }
       }, 100);
     };
-    input.click();
+    reader.readAsText(file);
+    setShowImport(false);
   };
 
   return (
-    <div className="glass h-full w-72 flex flex-col overflow-hidden shrink-0">
+    <div className="glass w-72 flex flex-col overflow-hidden shrink-0 anim-slide-in-left">
       {/* Search */}
       <div className="p-3 border-b border-white/10">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('searchContext', language)}
+            placeholder={t('searchContext', language) + '...'}
             className="glass-input w-full pl-9 pr-3 py-2 text-sm"
           />
         </div>
       </div>
 
-      {/* Project selector */}
-      <div className="p-3 border-b border-white/10">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold opacity-70">{t('projects', language)}</h3>
-          <button onClick={() => setShowNewProject(true)} className="p-1 rounded hover:bg-white/10">
-            <Plus size={14} className="text-emerald-400" />
-          </button>
-        </div>
-        <div className="space-y-1 max-h-24 overflow-y-auto">
-          {projects.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setActiveProject(p.id)}
-              className={`w-full text-left px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
-                p.id === activeProjectId ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/10'
+      {/* Projects list */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-8 opacity-40">
+            <BookOpen size={32} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">{t('noProjects', language)}</p>
+          </div>
+        )}
+
+        {filteredProjects.map(project => (
+          <div key={project.id} className="anim-fade-in">
+            {/* Project header */}
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover-glow group ${
+                activeProjectId === project.id ? 'bg-blue-500/20 border border-blue-500/30' : 'hover:bg-white/5'
               }`}
+              onClick={() => setActiveProject(project.id)}
             >
-              <FolderOpen size={14} />
-              <span className="truncate">{p.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* New project modal */}
-      {showNewProject && (
-        <div className="p-3 border-b border-white/10 glass-subtle m-2">
-          <input
-            type="text"
-            value={newProjectName}
-            onChange={e => setNewProjectName(e.target.value)}
-            placeholder={t('projectName', language)}
-            className="glass-input w-full px-3 py-2 text-sm mb-2"
-            autoFocus
-          />
-          <input
-            type="text"
-            value={newProjectDesc}
-            onChange={e => setNewProjectDesc(e.target.value)}
-            placeholder={t('projectDescription', language)}
-            className="glass-input w-full px-3 py-2 text-sm mb-2"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={() => { if (newProjectName.trim()) { createProject(newProjectName.trim(), newProjectDesc.trim()); setShowNewProject(false); setNewProjectName(''); setNewProjectDesc(''); } }}
-              className="glass-button glass-button-primary text-xs flex-1"
-            >
-              {t('save', language)}
-            </button>
-            <button onClick={() => setShowNewProject(false)} className="glass-button text-xs">
-              {t('cancel', language)}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Folder/Chapter tree */}
-      {activeProject && (
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold opacity-70">{activeProject.name}</h3>
-            <div className="flex gap-1">
-              <button onClick={() => setShowNewFolder(true)} className="p-1 rounded hover:bg-white/10" title={t('newProject', language)}>
-                <FolderPlus size={14} className="text-blue-400" />
-              </button>
-              <button onClick={handleImportFile} className="p-1 rounded hover:bg-white/10" title={t('import', language)}>
-                <Upload size={14} className="text-purple-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* New folder form */}
-          {showNewFolder && (
-            <div className="glass-subtle p-2 mb-2 flex gap-2">
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={e => setNewFolderName(e.target.value)}
-                placeholder="Nom du dossier"
-                className="glass-input flex-1 px-2 py-1 text-xs"
-                autoFocus
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && newFolderName.trim() && activeProjectId) {
-                    createFolder(activeProjectId, newFolderName.trim());
-                    setNewFolderName('');
-                    setShowNewFolder(false);
-                  }
-                }}
-              />
-              <button onClick={() => { if (newFolderName.trim() && activeProjectId) { createFolder(activeProjectId, newFolderName.trim()); setNewFolderName(''); setShowNewFolder(false); } }} className="text-emerald-400 text-xs">✓</button>
-              <button onClick={() => setShowNewFolder(false)} className="opacity-50 text-xs">✕</button>
-            </div>
-          )}
-
-          {/* Folders */}
-          {filteredFolders.map(folder => (
-            <div key={folder.id} className="mb-1">
-              <div className="flex items-center gap-1 group">
+              <FolderOpen size={16} className="text-blue-400 shrink-0" />
+              <span className="flex-1 text-sm font-medium truncate">{project.name}</span>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => toggleFolderCollapse(activeProjectId!, folder.id)}
+                  onClick={(e) => { e.stopPropagation(); indexProject(project.id); }}
                   className="p-1 rounded hover:bg-white/10"
+                  title="Indexer pour RAG"
                 >
-                  {folder.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                  <Search size={12} />
                 </button>
                 <button
-                  onClick={() => { setActiveFolder(folder.id); if (folder.chapters[0]) setActiveChapter(folder.chapters[0].id); }}
-                  className={`flex-1 text-left px-2 py-1 rounded text-sm flex items-center gap-2 ${
-                    folder.id === activeFolderId ? 'bg-blue-500/15 text-blue-400' : 'hover:bg-white/10'
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}
+                  className="p-1 rounded hover:bg-red-500/20 text-red-400"
                 >
-                  <FolderOpen size={13} />
-                  <span className="truncate">{folder.name}</span>
-                </button>
-                <button
-                  onClick={() => { setShowNewChapter(true); setActiveFolder(folder.id); }}
-                  className="p-1 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <FilePlus size={12} className="text-emerald-400" />
-                </button>
-                <button
-                  onClick={() => { if (activeProjectId) deleteFolder(activeProjectId, folder.id); }}
-                  className="p-1 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={12} className="text-red-400" />
+                  <Trash2 size={12} />
                 </button>
               </div>
+            </div>
 
-              {/* Chapters */}
-              {!folder.collapsed && (
-                <div className="ml-5 mt-0.5 space-y-0.5">
-                  {showNewChapter && folder.id === activeFolderId && (
-                    <div className="flex gap-1 items-center">
-                      <input
-                        type="text"
-                        value={newChapterTitle}
-                        onChange={e => setNewChapterTitle(e.target.value)}
-                        placeholder="Titre du chapitre"
-                        className="glass-input flex-1 px-2 py-1 text-xs"
-                        autoFocus
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && newChapterTitle.trim() && activeProjectId) {
-                            createChapter(activeProjectId, folder.id, newChapterTitle.trim());
-                            setNewChapterTitle('');
-                            setShowNewChapter(false);
-                          }
-                        }}
-                      />
-                      <button onClick={() => { if (newChapterTitle.trim() && activeProjectId) { createChapter(activeProjectId, folder.id, newChapterTitle.trim()); setNewChapterTitle(''); setShowNewChapter(false); } }} className="text-emerald-400 text-xs">✓</button>
-                      <button onClick={() => setShowNewChapter(false)} className="opacity-50 text-xs">✕</button>
-                    </div>
-                  )}
-                  {folder.chapters.map(chapter => (
-                    <div key={chapter.id} className="flex items-center gap-1 group/ch">
-                      <button
-                        onClick={() => { setActiveChapter(chapter.id); setActiveFolder(folder.id); }}
-                        className={`flex-1 text-left px-2 py-1 rounded text-xs flex items-center gap-2 ${
-                          chapter.id === activeChapterId ? 'bg-emerald-500/15 text-emerald-400' : 'hover:bg-white/10'
-                        }`}
+            {/* Project content (if active) */}
+            {activeProjectId === project.id && (
+              <div className="ml-4 mt-1 space-y-1 anim-slide-down">
+                {/* Tags */}
+                {project.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 px-2 py-1">
+                    {project.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1 anim-scale-in"
                       >
-                        <FileText size={12} />
-                        <span className="truncate">{chapter.title}</span>
-                      </button>
-                      <button
-                        onClick={() => { if (activeProjectId) deleteChapter(activeProjectId, folder.id, chapter.id); }}
-                        className="p-1 rounded hover:bg-white/10 opacity-0 group-hover/ch:opacity-100 transition-opacity"
-                      >
-                        <Trash2 size={10} className="text-red-400" />
-                      </button>
-                    </div>
-                  ))}
+                        #{tag}
+                        <X size={10} className="cursor-pointer hover:text-red-400" onClick={() => removeTag(project.id, tag)} />
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add tag */}
+                <div className="flex gap-1 px-2">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={e => setNewTag(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newTag.trim()) {
+                        addTag(project.id, newTag.trim());
+                        setNewTag('');
+                      }
+                    }}
+                    placeholder="+ tag"
+                    className="glass-input text-xs px-2 py-1 flex-1"
+                  />
                 </div>
-              )}
-            </div>
-          ))}
 
-          {/* Tags section */}
-          <div className="mt-4 pt-3 border-t border-white/10">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-semibold opacity-50 uppercase tracking-wider">Tags</h4>
-              <button onClick={() => setShowNewTag(!showNewTag)} className="p-1 rounded hover:bg-white/10">
-                <Plus size={12} />
-              </button>
-            </div>
-            {showNewTag && (
-              <div className="flex gap-1 mb-2 items-center">
-                <input
-                  type="text"
-                  value={newTagName}
-                  onChange={e => setNewTagName(e.target.value)}
-                  placeholder="Nom du tag"
-                  className="glass-input flex-1 px-2 py-1 text-xs"
-                />
-                <input
-                  type="color"
-                  value={newTagColor}
-                  onChange={e => setNewTagColor(e.target.value)}
-                  className="w-6 h-6 rounded cursor-pointer"
-                />
-                <button onClick={() => { if (newTagName.trim() && activeProjectId) { createTag(activeProjectId, newTagName.trim(), newTagColor); setNewTagName(''); setShowNewTag(false); } }} className="text-emerald-400 text-xs">✓</button>
-              </div>
-            )}
-            <div className="flex flex-wrap gap-1">
-              {activeProject.tags.map(tag => (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
-                  style={{ background: tag.color + '30', color: tag.color }}
+                {/* Notes button */}
+                <button
+                  onClick={() => setNotesOpen(true)}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-purple-500/10 text-purple-400 transition-all hover-glow"
                 >
-                  {tag.name}
-                  <button onClick={() => { if (activeProjectId) deleteTag(activeProjectId, tag.id); }} className="hover:opacity-70">
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
+                  <StickyNote size={14} />
+                  <span>{t('memory', language)} & Notes</span>
+                  <span className="ml-auto opacity-50">
+                    {project.notes.characters.length + project.notes.places.length + project.notes.moments.length}
+                  </span>
+                </button>
 
-          {/* Notes section */}
-          <div className="mt-4 pt-3 border-t border-white/10">
-            <button
-              onClick={() => setShowNotes(!showNotes)}
-              className="flex items-center gap-2 text-xs font-semibold opacity-50 uppercase tracking-wider w-full"
-            >
-              <StickyNote size={12} />
-              Notes / Mémoire
-            </button>
-            {showNotes && (
-              <div className="mt-2 space-y-1">
-                {activeProject.notes.map(note => (
-                  <div key={note.id} className="glass-subtle p-2 text-xs">
-                    <div className="font-medium mb-1">{note.title}</div>
-                    <div className="opacity-60 line-clamp-2">{note.content}</div>
+                {/* Folders */}
+                {project.folders.map(folder => (
+                  <div key={folder.id} className="anim-fade-in">
+                    <div
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all ${
+                        activeFolderId === folder.id ? 'bg-emerald-500/15' : 'hover:bg-white/5'
+                      }`}
+                      onClick={() => { setActiveFolder(folder.id); toggleFolder(folder.id); }}
+                    >
+                      <ChevronRight
+                        size={12}
+                        className={`transition-transform ${!collapsedFolders.has(folder.id) ? 'rotate-90' : ''}`}
+                      />
+                      <FolderOpen size={14} className="text-emerald-400 shrink-0" />
+                      <span className="flex-1 text-xs truncate">{folder.name}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}
+                        className="p-0.5 rounded hover:bg-red-500/20 text-red-400 opacity-0 hover:opacity-100"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+
+                    {/* Chapters */}
+                    {!collapsedFolders.has(folder.id) && (
+                      <div className="ml-5 space-y-0.5 anim-slide-down">
+                        {folder.chapters.map(chapter => (
+                          <div
+                            key={chapter.id}
+                            className={`flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer text-xs transition-all ${
+                              activeChapterId === chapter.id ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/5 opacity-70 hover:opacity-100'
+                            }`}
+                            onClick={() => setActiveChapter(chapter.id)}
+                          >
+                            <FileText size={12} className="shrink-0" />
+                            <span className="flex-1 truncate">{chapter.title}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteChapter(chapter.id); }}
+                              className="p-0.5 rounded hover:bg-red-500/20 text-red-400 opacity-0 hover:opacity-100"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* New chapter input */}
+                        {showNewChapter === folder.id ? (
+                          <div className="flex gap-1 px-1 py-1 anim-scale-in">
+                            <input
+                              type="text"
+                              value={newChapterTitle}
+                              onChange={e => setNewChapterTitle(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' && newChapterTitle.trim()) {
+                                  createChapter(folder.id, newChapterTitle.trim());
+                                  setNewChapterTitle('');
+                                  setShowNewChapter(null);
+                                }
+                                if (e.key === 'Escape') setShowNewChapter(null);
+                              }}
+                              placeholder="Titre du chapitre..."
+                              className="glass-input text-xs px-2 py-1 flex-1"
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setShowNewChapter(folder.id)}
+                            className="flex items-center gap-1 px-2 py-1 text-xs opacity-40 hover:opacity-100 transition-all hover-glow"
+                          >
+                            <FilePlus size={12} />
+                            <span>{t('newDocument', language)}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
-                <button
-                  onClick={() => {
-                    const title = prompt('Titre de la note :');
-                    if (title) {
-                      const content = prompt('Contenu de la note :') || '';
-                      if (activeProjectId) addNote(activeProjectId, title, content);
-                    }
-                  }}
-                  className="w-full text-center text-xs py-1 opacity-50 hover:opacity-100"
-                >
-                  + Ajouter une note
-                </button>
+
+                {/* New folder */}
+                {showNewFolder ? (
+                  <div className="flex gap-1 px-2 py-1 anim-scale-in">
+                    <input
+                      type="text"
+                      value={newFolderName}
+                      onChange={e => setNewFolderName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && newFolderName.trim()) {
+                          createFolder(project.id, newFolderName.trim());
+                          setNewFolderName('');
+                          setShowNewFolder(false);
+                        }
+                        if (e.key === 'Escape') setShowNewFolder(false);
+                      }}
+                      placeholder="Nom du dossier..."
+                      className="glass-input text-xs px-2 py-1 flex-1"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowNewFolder(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs opacity-40 hover:opacity-100 transition-all hover-glow"
+                  >
+                    <FolderPlus size={14} />
+                    <span>Dossier</span>
+                  </button>
+                )}
+
+                {/* Import */}
+                <label className="flex items-center gap-1 px-3 py-1.5 text-xs opacity-40 hover:opacity-100 transition-all cursor-pointer hover-glow">
+                  <Upload size={14} />
+                  <span>{t('importFile', language)}</span>
+                  <input type="file" accept=".txt,.md,.text" onChange={handleImportFile} className="hidden" />
+                </label>
               </div>
             )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {!activeProject && (
-        <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-sm opacity-40 text-center">{t('noProjects', language)}</p>
-        </div>
-      )}
+      {/* New project */}
+      <div className="p-3 border-t border-white/10">
+        {showNewProject ? (
+          <div className="space-y-2 anim-scale-in">
+            <input
+              type="text"
+              value={newProjectName}
+              onChange={e => setNewProjectName(e.target.value)}
+              placeholder={t('projectName', language)}
+              className="glass-input w-full px-3 py-2 text-sm"
+              autoFocus
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newProjectName.trim()) {
+                  createProject(newProjectName.trim(), '');
+                  setNewProjectName('');
+                  setShowNewProject(false);
+                }
+                if (e.key === 'Escape') setShowNewProject(false);
+              }}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (newProjectName.trim()) {
+                    createProject(newProjectName.trim(), '');
+                    setNewProjectName('');
+                    setShowNewProject(false);
+                  }
+                }}
+                className="glass-button glass-button-primary flex-1 text-xs py-1.5"
+              >
+                {t('save', language)}
+              </button>
+              <button
+                onClick={() => { setShowNewProject(false); setNewProjectName(''); }}
+                className="glass-button flex-1 text-xs py-1.5"
+              >
+                {t('cancel', language)}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowNewProject(true)}
+            className="glass-button glass-button-primary w-full flex items-center justify-center gap-2 text-sm py-2 anim-pulse-subtle"
+          >
+            <Plus size={16} />
+            <span>{t('newProject', language)}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

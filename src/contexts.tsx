@@ -1,6 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Language, Theme, Project, Folder, Chapter, ProjectNote, AgentMessage, APIConfig, RAGChunk, Tag, AnimationLevel } from './types';
-import { chunkText, buildRAGContext } from './services';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  Project, Folder, Chapter, AgentMessage, APIConfig,
+  Language, Theme, AnimationLevel, RAGChunk, ProjectNotes,
+  CharacterNote, PlaceNote, MomentNote, OverviewNote
+} from './types';
+import { searchChunks } from './services';
 
 interface AppState {
   language: Language;
@@ -10,406 +14,537 @@ interface AppState {
   activeProjectId: string | null;
   activeFolderId: string | null;
   activeChapterId: string | null;
-  agentMessages: AgentMessage[];
   apiConfig: APIConfig;
+  agentMessages: AgentMessage[];
   ragChunks: RAGChunk[];
   sidebarOpen: boolean;
   agentOpen: boolean;
   settingsOpen: boolean;
-  searchQuery: string;
-  // Setters
-  setLanguage: (l: Language) => void;
-  setTheme: (t: Theme) => void;
-  setAnimationLevel: (a: AnimationLevel) => void;
+  notesOpen: boolean;
+  setLanguage: (lang: Language) => void;
+  setTheme: (theme: Theme) => void;
+  setAnimationLevel: (level: AnimationLevel) => void;
+  createProject: (name: string, description: string) => void;
+  deleteProject: (id: string) => void;
+  createFolder: (projectId: string, name: string) => void;
+  deleteFolder: (folderId: string) => void;
+  createChapter: (folderId: string, title: string) => void;
+  deleteChapter: (chapterId: string) => void;
+  updateChapterContent: (chapterId: string, content: string) => void;
+  updateChapterTitle: (chapterId: string, title: string) => void;
+  updateChapterMemory: (chapterId: string, memory: string) => void;
   setActiveProject: (id: string | null) => void;
   setActiveFolder: (id: string | null) => void;
   setActiveChapter: (id: string | null) => void;
+  updateAPIConfig: (config: Partial<APIConfig>) => void;
   addAgentMessage: (msg: AgentMessage) => void;
   clearAgentMessages: () => void;
-  setApiConfig: (config: Partial<APIConfig>) => void;
   setSidebarOpen: (open: boolean) => void;
   setAgentOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
-  setSearchQuery: (q: string) => void;
-  // Project operations
-  createProject: (name: string, description: string) => void;
-  deleteProject: (id: string) => void;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-  // Folder operations
-  createFolder: (projectId: string, name: string) => void;
-  deleteFolder: (projectId: string, folderId: string) => void;
-  toggleFolderCollapse: (projectId: string, folderId: string) => void;
-  // Chapter operations
-  createChapter: (projectId: string, folderId: string, title: string) => void;
-  deleteChapter: (projectId: string, folderId: string, chapterId: string) => void;
-  updateChapterContent: (projectId: string, folderId: string, chapterId: string, content: string) => void;
-  updateChapterTitle: (projectId: string, folderId: string, chapterId: string, title: string) => void;
-  updateChapterTags: (projectId: string, folderId: string, chapterId: string, tags: string[]) => void;
-  // Tag operations
-  createTag: (projectId: string, name: string, color: string) => void;
-  deleteTag: (projectId: string, tagId: string) => void;
-  // Notes operations
-  addNote: (projectId: string, title: string, content: string, chapterId?: string) => void;
-  updateNote: (projectId: string, noteId: string, updates: Partial<ProjectNote>) => void;
-  deleteNote: (projectId: string, noteId: string) => void;
+  setNotesOpen: (open: boolean) => void;
+  getRAGContext: (query: string) => string;
+  indexProject: (projectId: string) => void;
+  addTag: (projectId: string, tag: string) => void;
+  removeTag: (projectId: string, tag: string) => void;
+  addFolderTag: (folderId: string, tag: string) => void;
+  addChapterTag: (chapterId: string, tag: string) => void;
+  // Notes
+  updateOverview: (projectId: string, overview: Partial<OverviewNote>) => void;
+  addCharacter: (projectId: string, character: CharacterNote) => void;
+  updateCharacter: (projectId: string, characterId: string, updates: Partial<CharacterNote>) => void;
+  deleteCharacter: (projectId: string, characterId: string) => void;
+  addPlace: (projectId: string, place: PlaceNote) => void;
+  updatePlace: (projectId: string, placeId: string, updates: Partial<PlaceNote>) => void;
+  deletePlace: (projectId: string, placeId: string) => void;
+  addMoment: (projectId: string, moment: MomentNote) => void;
+  updateMoment: (projectId: string, momentId: string, updates: Partial<MomentNote>) => void;
+  deleteMoment: (projectId: string, momentId: string) => void;
   // Computed
   activeProject: Project | null;
   activeFolder: Folder | null;
   activeChapter: Chapter | null;
-  getRAGContext: (query: string) => string;
-  indexProject: (project: Project) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
 
-export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useApp must be used within AppProvider');
-  return ctx;
-}
+const defaultAPIConfig: APIConfig = {
+  inlineEndpoint: '',
+  inlineApiKey: '',
+  inlineModel: '',
+  agentEndpoint: '',
+  agentApiKey: '',
+  agentModel: '',
+  availableModels: [],
+};
 
-const STORAGE_KEY = 'plumeai_data';
+const defaultOverview: OverviewNote = {
+  premise: '',
+  genre: '',
+  tone: '',
+  themes: [],
+  setting: '',
+  plotSummary: '',
+  worldRules: '',
+  audience: '',
+  goals: '',
+};
 
-function loadState(): { projects: Project[]; apiConfig: APIConfig; language: Language; theme: Theme; animationLevel: AnimationLevel } {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      return {
-        projects: data.projects || [],
-        apiConfig: data.apiConfig || { inlineEndpoint: '', inlineApiKey: '', inlineModel: '', agentEndpoint: '', agentApiKey: '', agentModel: '', availableModels: [] },
-        language: data.language || 'fr',
-        theme: data.theme || 'auto',
-        animationLevel: data.animationLevel || 'most',
-      };
-    }
-  } catch (e) { console.error(e); }
-  return {
-    projects: [],
-    apiConfig: { inlineEndpoint: '', inlineApiKey: '', inlineModel: '', agentEndpoint: '', agentApiKey: '', agentModel: '', availableModels: [] },
-    language: 'fr',
-    theme: 'auto',
-    animationLevel: 'most',
-  };
-}
-
-function saveState(projects: Project[], apiConfig: APIConfig, language: Language, theme: Theme, animationLevel: AnimationLevel) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, apiConfig, language, theme, animationLevel }));
-}
-
-function resolveTheme(theme: Theme): 'light' | 'dark' {
-  if (theme === 'auto') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  return theme;
-}
+const defaultNotes: ProjectNotes = {
+  overview: defaultOverview,
+  characters: [],
+  places: [],
+  moments: [],
+};
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const initial = loadState();
-  const [projects, setProjects] = useState<Project[]>(initial.projects);
-  const [apiConfig, setApiConfigState] = useState<APIConfig>(initial.apiConfig);
-  const [language, setLanguageState] = useState<Language>(initial.language);
-  const [theme, setThemeState] = useState<Theme>(initial.theme);
-  const [animationLevel, setAnimationLevelState] = useState<AnimationLevel>(initial.animationLevel);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(initial.projects[0]?.id || null);
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('plumeai_language');
+    return (saved as Language) || 'fr';
+  });
+
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const saved = localStorage.getItem('plumeai_theme');
+    return (saved as Theme) || 'auto';
+  });
+
+  const [animationLevel, setAnimationLevelState] = useState<AnimationLevel>(() => {
+    const saved = localStorage.getItem('plumeai_animations');
+    return (saved as AnimationLevel) || 'all';
+  });
+
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem('plumeai_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(() => {
+    return localStorage.getItem('plumeai_activeProject');
+  });
+
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
-  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
+
+  const [apiConfig, setAPIConfig] = useState<APIConfig>(() => {
+    const saved = localStorage.getItem('plumeai_apiConfig');
+    return saved ? JSON.parse(saved) : defaultAPIConfig;
+  });
+
+  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>(() => {
+    const saved = localStorage.getItem('plumeai_agentMessages');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [ragChunks, setRagChunks] = useState<RAGChunk[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [agentOpen, setAgentOpen] = useState(true);
+  const [agentOpen, setAgentOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [notesOpen, setNotesOpen] = useState(false);
 
-  // Apply theme
+  // Persist
+  useEffect(() => { localStorage.setItem('plumeai_language', language); }, [language]);
   useEffect(() => {
-    const resolved = resolveTheme(theme);
-    document.documentElement.className = resolved;
-    document.body.className = resolved;
-    localStorage.setItem('plumeai_theme', JSON.stringify(theme));
+    localStorage.setItem('plumeai_theme', theme);
+    applyTheme(theme);
   }, [theme]);
-
-  // Save state
+  useEffect(() => { localStorage.setItem('plumeai_animations', animationLevel); }, [animationLevel]);
+  useEffect(() => { localStorage.setItem('plumeai_projects', JSON.stringify(projects)); }, [projects]);
+  useEffect(() => { localStorage.setItem('plumeai_apiConfig', JSON.stringify(apiConfig)); }, [apiConfig]);
+  useEffect(() => { localStorage.setItem('plumeai_agentMessages', JSON.stringify(agentMessages)); }, [agentMessages]);
   useEffect(() => {
-    saveState(projects, apiConfig, language, theme, animationLevel);
-  }, [projects, apiConfig, language, theme, animationLevel]);
-
-  // Listen for system theme changes
-  useEffect(() => {
-    if (theme !== 'auto') return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      const resolved = resolveTheme('auto');
-      document.documentElement.className = resolved;
-      document.body.className = resolved;
-    };
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [theme]);
-
-  // Auto-select first folder/chapter when project changes
-  useEffect(() => {
-    const project = projects.find(p => p.id === activeProjectId);
-    if (project && project.folders.length > 0) {
-      if (!activeFolderId || !project.folders.find(f => f.id === activeFolderId)) {
-        const firstFolder = project.folders[0];
-        setActiveFolderId(firstFolder.id);
-        if (firstFolder.chapters.length > 0) {
-          setActiveChapterId(firstFolder.chapters[0].id);
-        }
-      }
-    }
-  }, [activeProjectId, projects]);
-
-  // Auto-index project on changes
-  useEffect(() => {
-    const project = projects.find(p => p.id === activeProjectId);
-    if (project) {
-      indexProject(project);
-    }
-  }, [activeProjectId, projects]);
-
-  const setLanguage = useCallback((l: Language) => setLanguageState(l), []);
-  const setTheme = useCallback((t: Theme) => setThemeState(t), []);
-  const setAnimationLevel = useCallback((a: AnimationLevel) => setAnimationLevelState(a), []);
-  const setActiveProject = useCallback((id: string | null) => { setActiveProjectId(id); setActiveFolderId(null); setActiveChapterId(null); }, []);
-  const setActiveFolder = useCallback((id: string | null) => setActiveFolderId(id), []);
-  const setActiveChapter = useCallback((id: string | null) => setActiveChapterId(id), []);
-  const addAgentMessage = useCallback((msg: AgentMessage) => setAgentMessages(prev => [...prev, msg]), []);
-  const clearAgentMessages = useCallback(() => setAgentMessages([]), []);
-  const setApiConfig = useCallback((config: Partial<APIConfig>) => setApiConfigState(prev => ({ ...prev, ...config })), []);
-
-  // Project operations
-  const createProject = useCallback((name: string, description: string) => {
-    const project: Project = {
-      id: crypto.randomUUID(),
-      name,
-      description,
-      folders: [],
-      notes: [],
-      tags: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setProjects(prev => [...prev, project]);
-    setActiveProjectId(project.id);
-  }, []);
-
-  const deleteProject = useCallback((id: string) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-    if (activeProjectId === id) setActiveProjectId(null);
+    if (activeProjectId) localStorage.setItem('plumeai_activeProject', activeProjectId);
   }, [activeProjectId]);
 
-  const updateProject = useCallback((id: string, updates: Partial<Project>) => {
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
-  }, []);
-
-  // Folder operations
-  const createFolder = useCallback((projectId: string, name: string) => {
-    const folder: Folder = {
-      id: crypto.randomUUID(),
-      name,
-      chapters: [],
-      tags: [],
-      order: Date.now(),
-      collapsed: false,
-    };
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, folders: [...p.folders, folder], updatedAt: new Date().toISOString() } : p));
-    setActiveFolderId(folder.id);
-  }, []);
-
-  const deleteFolder = useCallback((projectId: string, folderId: string) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, folders: p.folders.filter(f => f.id !== folderId), updatedAt: new Date().toISOString() } : p));
-    if (activeFolderId === folderId) setActiveFolderId(null);
-  }, [activeFolderId]);
-
-  const toggleFolderCollapse = useCallback((projectId: string, folderId: string) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      folders: p.folders.map(f => f.id === folderId ? { ...f, collapsed: !f.collapsed } : f)
-    } : p));
-  }, []);
-
-  // Chapter operations
-  const createChapter = useCallback((projectId: string, folderId: string, title: string) => {
-    const chapter: Chapter = {
-      id: crypto.randomUUID(),
-      title,
-      content: '',
-      tags: [],
-      notes: [],
-      order: Date.now(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      folders: p.folders.map(f => f.id === folderId ? { ...f, chapters: [...f.chapters, chapter] } : f),
-      updatedAt: new Date().toISOString()
-    } : p));
-    setActiveChapterId(chapter.id);
-  }, []);
-
-  const deleteChapter = useCallback((projectId: string, folderId: string, chapterId: string) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      folders: p.folders.map(f => f.id === folderId ? { ...f, chapters: f.chapters.filter(c => c.id !== chapterId) } : f),
-      updatedAt: new Date().toISOString()
-    } : p));
-    if (activeChapterId === chapterId) setActiveChapterId(null);
-  }, [activeChapterId]);
-
-  const updateChapterContent = useCallback((projectId: string, folderId: string, chapterId: string, content: string) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      folders: p.folders.map(f => f.id === folderId ? {
-        ...f,
-        chapters: f.chapters.map(c => c.id === chapterId ? { ...c, content, updatedAt: new Date().toISOString() } : c)
-      } : f),
-      updatedAt: new Date().toISOString()
-    } : p));
-  }, []);
-
-  const updateChapterTitle = useCallback((projectId: string, folderId: string, chapterId: string, title: string) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      folders: p.folders.map(f => f.id === folderId ? {
-        ...f,
-        chapters: f.chapters.map(c => c.id === chapterId ? { ...c, title, updatedAt: new Date().toISOString() } : c)
-      } : f),
-      updatedAt: new Date().toISOString()
-    } : p));
-  }, []);
-
-  const updateChapterTags = useCallback((projectId: string, folderId: string, chapterId: string, tags: string[]) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      folders: p.folders.map(f => f.id === folderId ? {
-        ...f,
-        chapters: f.chapters.map(c => c.id === chapterId ? { ...c, tags, updatedAt: new Date().toISOString() } : c)
-      } : f),
-      updatedAt: new Date().toISOString()
-    } : p));
-  }, []);
-
-  // Tag operations
-  const createTag = useCallback((projectId: string, name: string, color: string) => {
-    const tag: Tag = { id: crypto.randomUUID(), name, color };
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, tags: [...p.tags, tag] } : p));
-  }, []);
-
-  const deleteTag = useCallback((projectId: string, tagId: string) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? {
-      ...p,
-      tags: p.tags.filter(t => t.id !== tagId),
-      folders: p.folders.map(f => ({
-        ...f,
-        tags: f.tags.filter(t => t !== tagId),
-        chapters: f.chapters.map(c => ({ ...c, tags: c.tags.filter(t => t !== tagId) }))
-      }))
-    } : p));
-  }, []);
-
-  // Notes operations
-  const addNote = useCallback((projectId: string, title: string, content: string, chapterId?: string) => {
-    const note: ProjectNote = {
-      id: crypto.randomUUID(),
-      title,
-      content,
-      chapterId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setProjects(prev => prev.map(p => {
-      if (p.id !== projectId) return p;
-      if (chapterId) {
-        return {
-          ...p,
-          folders: p.folders.map(f => ({
-            ...f,
-            chapters: f.chapters.map(c => c.id === chapterId ? { ...c, notes: [...c.notes, note] } : c)
-          }))
-        };
-      }
-      return { ...p, notes: [...p.notes, note] };
-    }));
-  }, []);
-
-  const updateNote = useCallback((projectId: string, noteId: string, updates: Partial<ProjectNote>) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id !== projectId) return p;
-      return {
-        ...p,
-        notes: p.notes.map(n => n.id === noteId ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n),
-        folders: p.folders.map(f => ({
-          ...f,
-          chapters: f.chapters.map(c => ({
-            ...c,
-            notes: c.notes.map(n => n.id === noteId ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n)
-          }))
-        }))
-      };
-    }));
-  }, []);
-
-  const deleteNote = useCallback((projectId: string, noteId: string) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id !== projectId) return p;
-      return {
-        ...p,
-        notes: p.notes.filter(n => n.id !== noteId),
-        folders: p.folders.map(f => ({
-          ...f,
-          chapters: f.chapters.map(c => ({ ...c, notes: c.notes.filter(n => n.id !== noteId) }))
-        }))
-      };
-    }));
-  }, []);
-
-  // RAG
-  const indexProject = useCallback((project: Project) => {
-    const chunks: RAGChunk[] = [];
-    for (const folder of project.folders) {
-      for (const chapter of folder.chapters) {
-        if (chapter.content.trim().length > 0) {
-          const textChunks = chunkText(chapter.content);
-          textChunks.forEach((text, i) => {
-            chunks.push({
-              id: `${chapter.id}-${i}`,
-              chapterId: chapter.id,
-              chapterTitle: chapter.title,
-              folderName: folder.name,
-              content: text,
-            });
-          });
-        }
-      }
+  // Apply theme
+  const applyTheme = (t: Theme) => {
+    let resolved: 'light' | 'dark';
+    if (t === 'auto') {
+      resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } else {
+      resolved = t;
     }
-    setRagChunks(chunks);
-  }, []);
+    document.documentElement.className = resolved;
+    document.body.className = resolved;
+  };
 
-  const getRAGContext = useCallback((query: string): string => {
-    return buildRAGContext(ragChunks, query);
-  }, [ragChunks]);
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    applyTheme(t);
+  };
+
+  const setAnimationLevel = (level: AnimationLevel) => {
+    setAnimationLevelState(level);
+    document.documentElement.setAttribute('data-animations', level);
+  };
 
   // Computed
   const activeProject = projects.find(p => p.id === activeProjectId) || null;
   const activeFolder = activeProject?.folders.find(f => f.id === activeFolderId) || null;
   const activeChapter = activeFolder?.chapters.find(c => c.id === activeChapterId) || null;
 
+  // Project actions
+  const createProject = (name: string, description: string) => {
+    const newProject: Project = {
+      id: crypto.randomUUID(),
+      name,
+      description,
+      folders: [],
+      notes: { ...defaultNotes, overview: { ...defaultOverview } },
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setProjects(prev => [...prev, newProject]);
+    setActiveProjectId(newProject.id);
+  };
+
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    if (activeProjectId === id) setActiveProjectId(null);
+  };
+
+  // Folder actions
+  const createFolder = (projectId: string, name: string) => {
+    const newFolder: Folder = {
+      id: crypto.randomUUID(),
+      name,
+      projectId,
+      chapters: [],
+      tags: [],
+      createdAt: new Date().toISOString(),
+    };
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, folders: [...p.folders, newFolder], updatedAt: new Date().toISOString() }
+        : p
+    ));
+  };
+
+  const deleteFolder = (folderId: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.filter(f => f.id !== folderId),
+      updatedAt: new Date().toISOString(),
+    })));
+    if (activeFolderId === folderId) setActiveFolderId(null);
+  };
+
+  // Chapter actions
+  const createChapter = (folderId: string, title: string) => {
+    const project = projects.find(p => p.folders.some(f => f.id === folderId));
+    if (!project) return;
+
+    const newChapter: Chapter = {
+      id: crypto.randomUUID(),
+      title,
+      content: '',
+      folderId,
+      projectId: project.id,
+      tags: [],
+      memory: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f =>
+        f.id === folderId
+          ? { ...f, chapters: [...f.chapters, newChapter] }
+          : f
+      ),
+      updatedAt: new Date().toISOString(),
+    })));
+
+    setActiveFolderId(folderId);
+    setActiveChapterId(newChapter.id);
+  };
+
+  const deleteChapter = (chapterId: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f => ({
+        ...f,
+        chapters: f.chapters.filter(c => c.id !== chapterId),
+      })),
+      updatedAt: new Date().toISOString(),
+    })));
+    if (activeChapterId === chapterId) setActiveChapterId(null);
+  };
+
+  const updateChapterContent = (chapterId: string, content: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f => ({
+        ...f,
+        chapters: f.chapters.map(c =>
+          c.id === chapterId ? { ...c, content, updatedAt: new Date().toISOString() } : c
+        ),
+      })),
+      updatedAt: new Date().toISOString(),
+    })));
+  };
+
+  const updateChapterTitle = (chapterId: string, title: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f => ({
+        ...f,
+        chapters: f.chapters.map(c =>
+          c.id === chapterId ? { ...c, title, updatedAt: new Date().toISOString() } : c
+        ),
+      })),
+    })));
+  };
+
+  const updateChapterMemory = (chapterId: string, memory: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f => ({
+        ...f,
+        chapters: f.chapters.map(c =>
+          c.id === chapterId ? { ...c, memory, updatedAt: new Date().toISOString() } : c
+        ),
+      })),
+    })));
+  };
+
+  // API Config
+  const updateAPIConfig = (config: Partial<APIConfig>) => {
+    setAPIConfig(prev => ({ ...prev, ...config }));
+  };
+
+  // Agent
+  const addAgentMessage = (msg: AgentMessage) => {
+    setAgentMessages(prev => [...prev, msg]);
+  };
+
+  const clearAgentMessages = () => {
+    setAgentMessages([]);
+  };
+
+  // RAG
+  const indexProject = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const newChunks: RAGChunk[] = [];
+    project.folders.forEach(folder => {
+      folder.chapters.forEach(chapter => {
+        if (chapter.content.length > 50) {
+          // Split into chunks
+          const paragraphs = chapter.content.split(/\n\n+/).filter(p => p.length > 20);
+          paragraphs.forEach((para, i) => {
+            newChunks.push({
+              id: `${chapter.id}-${i}`,
+              chapterId: chapter.id,
+              folderId: folder.id,
+              projectId: project.id,
+              content: para,
+            });
+          });
+        }
+        // Also index memory
+        if (chapter.memory.length > 20) {
+          newChunks.push({
+            id: `${chapter.id}-memory`,
+            chapterId: chapter.id,
+            folderId: folder.id,
+            projectId: project.id,
+            content: `[Mémoire] ${chapter.memory}`,
+          });
+        }
+      });
+    });
+
+    setRagChunks(prev => [
+      ...prev.filter(c => c.projectId !== projectId),
+      ...newChunks,
+    ]);
+  };
+
+  const getRAGContext = (query: string): string => {
+    if (!activeProjectId) return '';
+    const results = searchChunks(ragChunks, query, 5, activeProjectId);
+    return results.map(r => r.content).join('\n\n---\n\n');
+  };
+
+  // Tags
+  const addTag = (projectId: string, tag: string) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId && !p.tags.includes(tag)
+        ? { ...p, tags: [...p.tags, tag] }
+        : p
+    ));
+  };
+
+  const removeTag = (projectId: string, tag: string) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, tags: p.tags.filter(t => t !== tag) }
+        : p
+    ));
+  };
+
+  const addFolderTag = (folderId: string, tag: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f =>
+        f.id === folderId && !f.tags.includes(tag)
+          ? { ...f, tags: [...f.tags, tag] }
+          : f
+      ),
+    })));
+  };
+
+  const addChapterTag = (chapterId: string, tag: string) => {
+    setProjects(prev => prev.map(p => ({
+      ...p,
+      folders: p.folders.map(f => ({
+        ...f,
+        chapters: f.chapters.map(c =>
+          c.id === chapterId && !c.tags.includes(tag)
+            ? { ...c, tags: [...c.tags, tag] }
+            : c
+        ),
+      })),
+    })));
+  };
+
+  // Notes
+  const updateOverview = (projectId: string, overview: Partial<OverviewNote>) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, overview: { ...p.notes.overview, ...overview } } }
+        : p
+    ));
+  };
+
+  const addCharacter = (projectId: string, character: CharacterNote) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, characters: [...p.notes.characters, character] } }
+        : p
+    ));
+  };
+
+  const updateCharacter = (projectId: string, characterId: string, updates: Partial<CharacterNote>) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? {
+            ...p,
+            notes: {
+              ...p.notes,
+              characters: p.notes.characters.map(c =>
+                c.id === characterId ? { ...c, ...updates } : c
+              ),
+            },
+          }
+        : p
+    ));
+  };
+
+  const deleteCharacter = (projectId: string, characterId: string) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, characters: p.notes.characters.filter(c => c.id !== characterId) } }
+        : p
+    ));
+  };
+
+  const addPlace = (projectId: string, place: PlaceNote) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, places: [...p.notes.places, place] } }
+        : p
+    ));
+  };
+
+  const updatePlace = (projectId: string, placeId: string, updates: Partial<PlaceNote>) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? {
+            ...p,
+            notes: {
+              ...p.notes,
+              places: p.notes.places.map(pl =>
+                pl.id === placeId ? { ...pl, ...updates } : pl
+              ),
+            },
+          }
+        : p
+    ));
+  };
+
+  const deletePlace = (projectId: string, placeId: string) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, places: p.notes.places.filter(pl => pl.id !== placeId) } }
+        : p
+    ));
+  };
+
+  const addMoment = (projectId: string, moment: MomentNote) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, moments: [...p.notes.moments, moment] } }
+        : p
+    ));
+  };
+
+  const updateMoment = (projectId: string, momentId: string, updates: Partial<MomentNote>) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? {
+            ...p,
+            notes: {
+              ...p.notes,
+              moments: p.notes.moments.map(m =>
+                m.id === momentId ? { ...m, ...updates } : m
+              ),
+            },
+          }
+        : p
+    ));
+  };
+
+  const deleteMoment = (projectId: string, momentId: string) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId
+        ? { ...p, notes: { ...p.notes, moments: p.notes.moments.filter(m => m.id !== momentId) } }
+        : p
+    ));
+  };
+
   const value: AppState = {
-    language, theme, animationLevel, projects, activeProjectId, activeFolderId, activeChapterId,
-    agentMessages, apiConfig, ragChunks, sidebarOpen, agentOpen, settingsOpen, searchQuery,
-    setLanguage, setTheme, setAnimationLevel, setActiveProject, setActiveFolder, setActiveChapter,
-    addAgentMessage, clearAgentMessages, setApiConfig, setSidebarOpen, setAgentOpen, setSettingsOpen, setSearchQuery,
-    createProject, deleteProject, updateProject,
-    createFolder, deleteFolder, toggleFolderCollapse,
-    createChapter, deleteChapter, updateChapterContent, updateChapterTitle, updateChapterTags,
-    createTag, deleteTag,
-    addNote, updateNote, deleteNote,
-    activeProject, activeFolder, activeChapter,
+    language, theme, animationLevel, projects,
+    activeProjectId, activeFolderId, activeChapterId,
+    apiConfig, agentMessages, ragChunks,
+    sidebarOpen, agentOpen, settingsOpen, notesOpen,
+    setLanguage, setTheme, setAnimationLevel,
+    createProject, deleteProject,
+    createFolder, deleteFolder,
+    createChapter, deleteChapter,
+    updateChapterContent, updateChapterTitle, updateChapterMemory,
+    setActiveProject: setActiveProjectId,
+    setActiveFolder: setActiveFolderId,
+    setActiveChapter: setActiveChapterId,
+    updateAPIConfig,
+    addAgentMessage, clearAgentMessages,
+    setSidebarOpen, setAgentOpen, setSettingsOpen, setNotesOpen,
     getRAGContext, indexProject,
+    addTag, removeTag, addFolderTag, addChapterTag,
+    updateOverview, addCharacter, updateCharacter, deleteCharacter,
+    addPlace, updatePlace, deletePlace,
+    addMoment, updateMoment, deleteMoment,
+    activeProject, activeFolder, activeChapter,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
+  return ctx;
 }

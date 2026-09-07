@@ -1,20 +1,14 @@
 export type Language = 'fr' | 'es' | 'zh' | 'de' | 'ja';
 export type Theme = 'light' | 'dark' | 'auto';
-export type AnimationLevel = 'none' | 'few' | 'most' | 'all' | 'custom';
+export type AnimationLevel = 'none' | 'few' | 'more' | 'all' | 'custom';
 
-export interface Tag {
+export interface Project {
   id: string;
   name: string;
-  color: string;
-}
-
-export interface Chapter {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[]; // tag ids
-  notes: ProjectNote[];
-  order: number;
+  description: string;
+  folders: Folder[];
+  notes: ProjectNotes;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -22,28 +16,97 @@ export interface Chapter {
 export interface Folder {
   id: string;
   name: string;
+  projectId: string;
   chapters: Chapter[];
   tags: string[];
-  order: number;
-  collapsed: boolean;
+  createdAt: string;
 }
 
-export interface ProjectNote {
+export interface Chapter {
   id: string;
   title: string;
   content: string;
-  chapterId?: string;
+  folderId: string;
+  projectId: string;
+  tags: string[];
+  memory: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Project {
+// Notes system (Type.ai inspired)
+export interface ProjectNotes {
+  overview: OverviewNote;
+  characters: CharacterNote[];
+  places: PlaceNote[];
+  moments: MomentNote[];
+}
+
+export interface OverviewNote {
+  premise: string;
+  genre: string;
+  tone: string;
+  themes: string[];
+  setting: string;
+  plotSummary: string;
+  worldRules: string;
+  audience: string;
+  goals: string;
+}
+
+export interface CharacterNote {
   id: string;
   name: string;
+  aliases: string[];
+  age: string;
+  appearance: string;
+  personality: string;
+  background: string;
+  goals: string;
+  fears: string;
+  relationships: string;
+  conflicts: string;
+  development: string;
+  importantFacts: string[];
+  avatar?: string;
+}
+
+export interface PlaceNote {
+  id: string;
+  name: string;
+  type: string;
+  layout: string;
+  landmarks: string[];
+  atmosphere: string;
+  history: string;
+  inhabitants: string;
+  importantObjects: string[];
+  events: string;
+  rules: string;
+}
+
+export interface MomentNote {
+  id: string;
+  title: string;
   description: string;
-  folders: Folder[];
-  notes: ProjectNote[]; // project-level notes
-  tags: Tag[];
+  type: 'event' | 'decision' | 'revelation' | 'conversation' | 'confrontation' | 'turning_point' | 'flashback' | 'relationship_change';
+  timing: {
+    relation: 'before' | 'after' | 'during' | 'exact';
+    referenceMomentId?: string;
+    timeOffset?: string;
+  };
+  duration?: string;
+  charactersInvolved: string[];
+  placeId?: string;
+  consequences: string;
+  linkedMoments: string[];
+}
+
+export interface Document {
+  id: string;
+  title: string;
+  content: string;
+  projectId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -70,14 +133,14 @@ export interface APIConfig {
 export interface RAGChunk {
   id: string;
   chapterId: string;
-  chapterTitle: string;
-  folderName: string;
+  folderId: string;
+  projectId: string;
   content: string;
+  embedding?: number[];
 }
 
 export interface InlineSuggestion {
   text: string;
-  words: string[];
   position: number;
 }
 
