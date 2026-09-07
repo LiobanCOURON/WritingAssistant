@@ -83,6 +83,7 @@ type TranslationKeys = {
   few: string;
   more: string;
   all: string;
+  chaos: string;
   custom: string;
 };
 
@@ -170,6 +171,7 @@ const translations: Record<Language, TranslationKeys> = {
     few: 'Peu',
     more: 'Plus',
     all: 'Tout',
+    chaos: 'Chaos',
     custom: 'Custom',
   },
   es: {
@@ -255,6 +257,7 @@ const translations: Record<Language, TranslationKeys> = {
     few: 'Pocas',
     more: 'Más',
     all: 'Todas',
+    chaos: 'Caos',
     custom: 'Personalizado',
   },
   zh: {
@@ -340,6 +343,7 @@ const translations: Record<Language, TranslationKeys> = {
     few: '少量',
     more: '更多',
     all: '全部',
+    chaos: '混乱',
     custom: '自定义',
   },
   de: {
@@ -425,6 +429,7 @@ const translations: Record<Language, TranslationKeys> = {
     few: 'Wenige',
     more: 'Mehr',
     all: 'Alle',
+    chaos: 'Chaos',
     custom: 'Benutzerdefiniert',
   },
   ja: {
@@ -510,6 +515,7 @@ const translations: Record<Language, TranslationKeys> = {
     few: '少ない',
     more: 'もっと',
     all: 'すべて',
+    chaos: 'カオス',
     custom: 'カスタム',
   },
 };

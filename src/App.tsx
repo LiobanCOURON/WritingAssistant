@@ -25,23 +25,24 @@ function AppContent() {
   }
 
   const { createExplosion } = useExplosionParticles();
+  const isChaos = animationLevel === 'chaos';
 
   const handleSidebarToggle = (e: React.MouseEvent) => {
     setSidebarOpen(!sidebarOpen);
     soundManager.whoosh();
-    createExplosion(e.clientX, e.clientY, '#3b82f6');
+    createExplosion(e.clientX, e.clientY, '#3b82f6', isChaos);
   };
 
   const handleAgentToggle = (e: React.MouseEvent) => {
     setAgentOpen(!agentOpen);
     soundManager.whoosh();
-    createExplosion(e.clientX, e.clientY, '#10b981');
+    createExplosion(e.clientX, e.clientY, '#10b981', isChaos);
   };
 
   const handleNotesToggle = (e: React.MouseEvent) => {
     setNotesOpen(!notesOpen);
     soundManager.pop();
-    createExplosion(e.clientX, e.clientY, '#8b5cf6');
+    createExplosion(e.clientX, e.clientY, '#8b5cf6', isChaos);
   };
 
   return (
@@ -73,6 +74,24 @@ function AppContent() {
         <div className="particle particle-3" style={{ top: '65%', left: '75%', animationDuration: '23s' }} />
         <div className="particle particle-4" style={{ top: '95%', left: '45%', animationDuration: '25s' }} />
         <div className="particle particle-5" style={{ top: '35%', left: '95%', animationDuration: '27s' }} />
+        
+        {/* Chaos mode: 100+ extra particles */}
+        {animationLevel === 'chaos' && Array.from({ length: 100 }, (_, i) => (
+          <div
+            key={`chaos-${i}`}
+            className="particle"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${5 + Math.random() * 10}s`,
+              animationDelay: `${Math.random() * 5}s`,
+              width: `${10 + Math.random() * 20}px`,
+              height: `${10 + Math.random() * 20}px`,
+              background: `hsl(${Math.random() * 360}, 100%, 50%)`,
+              filter: 'blur(2px)',
+            }}
+          />
+        ))}
       </div>
 
       {/* Top Bar */}

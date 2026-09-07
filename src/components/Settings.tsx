@@ -75,6 +75,7 @@ export function SettingsModal() {
     { value: 'few', label: t('few', language), icon: <Zap size={14} className="opacity-60" /> },
     { value: 'more', label: t('more', language), icon: <Sparkles size={14} /> },
     { value: 'all', label: t('all', language), icon: <Wand2 size={14} className="text-emerald-400" /> },
+    { value: 'chaos', label: t('chaos', language), icon: <span className="text-lg">🌪️</span> },
     { value: 'custom', label: t('custom', language), icon: <Palette size={14} className="text-purple-400" /> },
   ];
 
@@ -171,6 +172,16 @@ export function SettingsModal() {
                 </span>
               </label>
             </div>
+            
+            {/* Chaos Warning */}
+            {animationLevel === 'chaos' && (
+              <div className="mt-4 p-3 rounded-lg bg-red-500/20 border border-red-500/40 anim-scale-in">
+                <p className="text-sm text-red-300 flex items-center gap-2">
+                  <span className="text-xl">⚠️</span>
+                  <span>Mode Chaos activé ! Préparez-vous pour une expérience visuelle extrême !</span>
+                </p>
+              </div>
+            )}
             
             {/* Custom Animations */}
             {animationLevel === 'custom' && (

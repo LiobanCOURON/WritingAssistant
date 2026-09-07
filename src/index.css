@@ -1113,6 +1113,263 @@ input,
 }
 
 /* ========================
+   CHAOS MODE - EXTREME ANIMATIONS
+   ======================== */
+
+/* Every character bounces wildly */
+[data-animations="chaos"] *:not(textarea):not(input):not(script):not(style) {
+  display: inline-block !important;
+  animation: chaosBounce 0.3s ease-in-out infinite alternate !important;
+}
+
+@keyframes chaosBounce {
+  0% { 
+    transform: translateY(-5px) rotate(-5deg) scale(1.1);
+    filter: hue-rotate(0deg);
+  }
+  100% { 
+    transform: translateY(5px) rotate(5deg) scale(0.9);
+    filter: hue-rotate(360deg);
+  }
+}
+
+/* Chaotic particle explosion on every element */
+[data-animations="chaos"] *::before,
+[data-animations="chaos"] *::after {
+  content: '✨🎉🔥💫⭐🌟💥🎊' !important;
+  position: absolute !important;
+  font-size: 20px !important;
+  animation: chaosParticles 0.5s ease-out infinite !important;
+  pointer-events: none !important;
+  z-index: 9999 !important;
+}
+
+@keyframes chaosParticles {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--chaos-x, 100px), var(--chaos-y, -100px)) scale(0) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Rainbow border on everything */
+[data-animations="chaos"] * {
+  border: 3px solid transparent !important;
+  background-clip: padding-box !important;
+  animation: chaosBorder 1s linear infinite !important;
+}
+
+@keyframes chaosBorder {
+  0% { border-color: #ff0000 !important; }
+  16% { border-color: #ff8800 !important; }
+  33% { border-color: #ffff00 !important; }
+  50% { border-color: #00ff00 !important; }
+  66% { border-color: #0088ff !important; }
+  83% { border-color: #8800ff !important; }
+  100% { border-color: #ff0000 !important; }
+}
+
+/* Chaotic rotation on hover */
+[data-animations="chaos"] *:hover {
+  animation: chaosRotate 0.2s ease-in-out infinite !important;
+  transform-origin: center !important;
+}
+
+@keyframes chaosRotate {
+  0% { transform: rotate(-10deg) scale(1.2); }
+  50% { transform: rotate(10deg) scale(0.8); }
+  100% { transform: rotate(-10deg) scale(1.2); }
+}
+
+/* Glitch effect on all text */
+[data-animations="chaos"] p,
+[data-animations="chaos"] h1,
+[data-animations="chaos"] h2,
+[data-animations="chaos"] h3,
+[data-animations="chaos"] h4,
+[data-animations="chaos"] h5,
+[data-animations="chaos"] h6,
+[data-animations="chaos"] span,
+[data-animations="chaos"] div {
+  animation: chaosGlitch 0.1s infinite !important;
+  text-shadow: 
+    2px 0 #ff0000,
+    -2px 0 #00ff00,
+    0 2px #0000ff !important;
+}
+
+@keyframes chaosGlitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-3px, 3px); }
+  40% { transform: translate(3px, -3px); }
+  60% { transform: translate(-3px, -3px); }
+  80% { transform: translate(3px, 3px); }
+  100% { transform: translate(0); }
+}
+
+/* Chaotic color cycling */
+[data-animations="chaos"] button,
+[data-animations="chaos"] input,
+[data-animations="chaos"] textarea {
+  animation: chaosColor 0.5s linear infinite !important;
+}
+
+@keyframes chaosColor {
+  0% { 
+    background: linear-gradient(45deg, #ff0000, #ff8800) !important;
+    box-shadow: 0 0 20px #ff0000 !important;
+  }
+  25% { 
+    background: linear-gradient(45deg, #ff8800, #ffff00) !important;
+    box-shadow: 0 0 20px #ff8800 !important;
+  }
+  50% { 
+    background: linear-gradient(45deg, #ffff00, #00ff00) !important;
+    box-shadow: 0 0 20px #ffff00 !important;
+  }
+  75% { 
+    background: linear-gradient(45deg, #00ff00, #0088ff) !important;
+    box-shadow: 0 0 20px #00ff00 !important;
+  }
+  100% { 
+    background: linear-gradient(45deg, #0088ff, #ff0000) !important;
+    box-shadow: 0 0 20px #0088ff !important;
+  }
+}
+
+/* Chaotic scaling on everything */
+[data-animations="chaos"] * {
+  animation: chaosScale 0.3s ease-in-out infinite alternate !important;
+}
+
+@keyframes chaosScale {
+  0% { transform: scale(0.95); }
+  100% { transform: scale(1.05); }
+}
+
+/* Chaotic shake on click */
+[data-animations="chaos"] *:active {
+  animation: chaosShake 0.1s linear infinite !important;
+}
+
+@keyframes chaosShake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-10px, -10px) rotate(-10deg); }
+  50% { transform: translate(10px, -10px) rotate(10deg); }
+  75% { transform: translate(-10px, 10px) rotate(-10deg); }
+  100% { transform: translate(10px, 10px) rotate(10deg); }
+}
+
+/* Chaotic float for all elements */
+[data-animations="chaos"] * {
+  animation: chaosFloat 2s ease-in-out infinite !important;
+}
+
+@keyframes chaosFloat {
+  0%, 100% { 
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  25% { 
+    transform: translateY(-20px) translateX(10px) rotate(5deg);
+  }
+  50% { 
+    transform: translateY(0) translateX(-10px) rotate(-5deg);
+  }
+  75% { 
+    transform: translateY(20px) translateX(10px) rotate(5deg);
+  }
+}
+
+/* Chaotic background animation */
+[data-animations="chaos"] body {
+  animation: chaosBackground 1s linear infinite !important;
+}
+
+@keyframes chaosBackground {
+  0% { 
+    background: linear-gradient(45deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff) !important;
+    background-size: 400% 400% !important;
+    background-position: 0% 50% !important;
+  }
+  50% {
+    background-position: 100% 50% !important;
+  }
+  100% {
+    background-position: 0% 50% !important;
+  }
+}
+
+/* Chaotic particle burst on every interaction */
+[data-animations="chaos"] *:hover::before {
+  content: '🎉🎊✨💫⭐🌟💥🔥🎆🎇' !important;
+  position: absolute !important;
+  font-size: 30px !important;
+  animation: chaosBurst 0.3s ease-out !important;
+  pointer-events: none !important;
+}
+
+@keyframes chaosBurst {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Chaotic text scramble */
+[data-animations="chaos"] * {
+  animation: chaosScramble 0.2s steps(10) infinite !important;
+}
+
+@keyframes chaosScramble {
+  0% { letter-spacing: 0px; }
+  50% { letter-spacing: 2px; }
+  100% { letter-spacing: 0px; }
+}
+
+/* Chaotic wobble on everything */
+[data-animations="chaos"] * {
+  animation: chaosWobble 0.5s ease-in-out infinite !important;
+}
+
+@keyframes chaosWobble {
+  0%, 100% { transform: skewX(0deg) skewY(0deg); }
+  25% { transform: skewX(5deg) skewY(5deg); }
+  50% { transform: skewX(-5deg) skewY(-5deg); }
+  75% { transform: skewX(5deg) skewY(-5deg); }
+}
+
+/* Chaotic pulse on all borders */
+[data-animations="chaos"] * {
+  animation: chaosPulse 0.3s ease-in-out infinite !important;
+}
+
+@keyframes chaosPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 10px #ff0000,
+      0 0 20px #ff8800,
+      0 0 30px #ffff00,
+      0 0 40px #00ff00,
+      0 0 50px #0088ff !important;
+  }
+  50% { 
+    box-shadow: 
+      0 0 20px #ff0000,
+      0 0 40px #ff8800,
+      0 0 60px #ffff00,
+      0 0 80px #00ff00,
+      0 0 100px #0088ff !important;
+  }
+}
+
+/* ========================
    EXPLOSION PARTICLES
    ======================== */
 
