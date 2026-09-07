@@ -35,36 +35,39 @@ export function LanguageSwitcher() {
 
       {isOpen && (
         <>
-          {/* Backdrop sans blur - juste pour fermer au clic extérieur */}
+          {/* Backdrop transparent pour capturer les clics extérieurs */}
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
           
-          {/* Dropdown avec blur intégré */}
-          <div className="absolute right-0 top-full mt-2 z-50 min-w-[180px] anim-scale-in shadow-2xl rounded-xl overflow-hidden">
-            {/* Couche de flou en arrière-plan */}
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-xl dark:bg-black/50" />
-            
-            {/* Contenu */}
-            <div className="relative p-2 border border-white/20 rounded-xl">
-              {(Object.keys(languageNames) as Language[]).map((lang, index) => (
-                <button
-                  key={lang}
-                  onClick={() => { setLanguage(lang); setIsOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all anim-slide-in-left hover-lift ${
-                    language === lang
-                      ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-emerald-400 font-semibold'
-                      : 'hover:bg-white/10'
-                  }`}
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <span className="text-xl anim-scale-hover">{languageFlags[lang]}</span>
-                  <span className="flex-1 text-left">{languageNames[lang]}</span>
-                  {language === lang && <Check size={16} className="text-emerald-400 anim-pop" />}
-                </button>
-              ))}
-            </div>
+          {/* Dropdown avec effet liquid glass */}
+          <div 
+            className="absolute right-0 top-full mt-2 z-50 min-w-[180px] anim-scale-in shadow-2xl rounded-xl p-2"
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            {(Object.keys(languageNames) as Language[]).map((lang, index) => (
+              <button
+                key={lang}
+                onClick={() => { setLanguage(lang); setIsOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all anim-slide-in-left hover-lift ${
+                  language === lang
+                    ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-emerald-400 font-semibold'
+                    : 'hover:bg-white/10'
+                }`}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <span className="text-xl anim-scale-hover">{languageFlags[lang]}</span>
+                <span className="flex-1 text-left">{languageNames[lang]}</span>
+                {language === lang && <Check size={16} className="text-emerald-400 anim-pop" />}
+              </button>
+            ))}
           </div>
         </>
       )}
