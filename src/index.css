@@ -1170,11 +1170,7 @@ input,
    CHARACTER ANIMATIONS
    ======================== */
 
-/* Wave animation for all characters */
-[data-animations="all"] *:not(textarea):not(input) {
-  display: inline-block;
-}
-
+/* Character animations - only apply to elements with explicit classes */
 [data-animations="all"] .anim-char-wave {
   animation: charWave 2s ease-in-out infinite;
 }
