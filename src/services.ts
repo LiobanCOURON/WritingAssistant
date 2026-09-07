@@ -245,3 +245,59 @@ export function searchChunks(
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 }
+
+// ========================
+// SLASH COMMANDS
+// ========================
+
+export async function executeSlashCommand(
+  apiConfig: APIConfig,
+  action: string,
+  content: string,
+  instruction: string,
+  notesContext: string
+): Promise<string> {
+  const systemPrompts: Record<string, string> = {
+    develop: `Tu es un expert en rédaction. Développe le texte selon l'instruction de l'utilisateur. Ajoute des détails, enrichis les descriptions, approfondis les idées. Maintiens le style et le ton original. Réponds UNIQUEMENT avec le texte développé.`,
+    summarize: `Tu es un expert en synthèse. Résume le texte de manière concise tout en conservant les idées principales. Réponds UNIQUEMENT avec le résumé.`,
+    correct: `Tu es un correcteur expert. Corrige toutes les fautes de grammaire, orthographe, ponctuation et syntaxe. Améliore la clarté si nécessaire. Réponds UNIQUEMENT avec le texte corrigé.`,
+    rewrite: `Tu es un expert en réécriture. Réécris le texte selon l'instruction de l'utilisateur en changeant le style, le ton ou la structure. Réponds UNIQUEMENT avec le texte réécrit.`,
+    analyze: `Tu es un analyste littéraire. Analyse le style, la structure, les thèmes et les techniques du texte. Fournis une analyse détaillée et constructive.`,
+    brainstorm: `Tu es un expert en créativité. Génère des idées, des pistes de développement, des angles d'approche pour continuer ou enrichir le texte selon l'instruction.`,
+    outline: `Tu es un expert en structuration. Crée un plan détaillé pour développer le texte selon l'instruction. Organise les idées de manière logique et progressive.`,
+    translate: `Tu es un traducteur expert. Traduis le texte selon l'instruction (langue cible précisée). Maintiens le style et le ton original. Réponds UNIQUEMENT avec la traduction.`,
+    character: `Tu es un expert en création de personnages. Crée un personnage détaillé selon l'instruction : nom, apparence, personnalité, background, motivations, etc.`,
+    place: `Tu es un expert en description de lieux. Décris un lieu de manière immersive selon l'instruction : atmosphère, détails sensoriels, histoire, etc.`,
+  };
+
+  const systemPrompt = systemPrompts[action] || systemPrompts.develop;
+  const contextParts = [
+    notesContext ? `## Contexte du projet (Notes):\n${notesContext}` : '',
+    `## Texte actuel:\n${content}`,
+    instruction ? `## Instruction:\n${instruction}` : '',
+  ].filter(Boolean).join('\n\n');
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: contextParts },
+  ];
+
+  const url = `${apiConfig.agentEndpoint.replace(/\/$/, '')}/chat/completions`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (apiConfig.agentApiKey) headers['Authorization'] = `Bearer ${apiConfig.agentApiKey}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: apiConfig.agentModel,
+      messages,
+      temperature: 0.7,
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}

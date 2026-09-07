@@ -264,6 +264,36 @@ export function SettingsModal() {
               </div>
             </div>
           </section>
+
+          {/* Custom Animations */}
+          {animationLevel === 'custom' && (
+            <section className="glass-subtle p-4 anim-scale-in">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 opacity-80">
+                <Palette size={16} />
+                Animations personnalisées
+              </h3>
+              <div className="space-y-2">
+                {[
+                  { key: 'particles', label: 'Particules d\'arrière-plan', emoji: '✨' },
+                  { key: 'hover', label: 'Effets de survol', emoji: '🎯' },
+                  { key: 'transitions', label: 'Transitions', emoji: '🔄' },
+                  { key: 'entrance', label: 'Animations d\'entrée', emoji: '🎬' },
+                  { key: 'feedback', label: 'Feedback visuel', emoji: '💫' },
+                  { key: 'micro', label: 'Micro-interactions', emoji: '⚡' },
+                ].map((anim) => (
+                  <label key={anim.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all cursor-pointer">
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-4 h-4 rounded accent-emerald-500"
+                    />
+                    <span className="text-lg">{anim.emoji}</span>
+                    <span className="text-sm">{anim.label}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Footer */}

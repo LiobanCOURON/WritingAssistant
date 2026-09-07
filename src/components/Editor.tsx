@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../contexts';
 import { t } from '../i18n';
-import { getInlineSuggestion } from '../services';
+import { getInlineSuggestion, executeSlashCommand } from '../services';
 import { SlashCommand } from '../types';
 import {
   Sparkles, AlignLeft, Type, Hash, Download,
   Wand2, BookOpen, PenTool, RefreshCw, CheckCircle,
   Search, BarChart3, Brain, Lightbulb, ChevronRight,
-  Check, X
+  Check, X, Zap
 } from 'lucide-react';
 
 const SLASH_COMMANDS: SlashCommand[] = [
@@ -26,7 +26,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
 export function Editor() {
   const {
     language, activeChapter, activeProject, activeFolder, apiConfig,
-    updateChapterContent, updateChapterTitle,
+    updateChapterContent, updateChapterTitle, getNotesContext,
   } = useApp();
 
   const [suggestion, setSuggestion] = useState('');
@@ -36,8 +36,21 @@ export function Editor() {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [slashIndex, setSlashIndex] = useState(0);
+  const [slashPosition, setSlashPosition] = useState(0);
   const [titleEditing, setTitleEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
+  
+  // Slash command instruction modal
+  const [showSlashInstruction, setShowSlashInstruction] = useState(false);
+  const [selectedCommand, setSelectedCommand] = useState<SlashCommand | null>(null);
+  const [slashInstruction, setSlashInstruction] = useState('');
+  
+  // Diff system
+  const [showDiff, setShowDiff] = useState(false);
+  const [diffOriginal, setDiffOriginal] = useState('');
+  const [diffModified, setDiffModified] = useState('');
+  const [isApplyingDiff, setIsApplyingDiff] = useState(false);
+  
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -74,14 +87,24 @@ export function Editor() {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!activeChapter) return;
     const newContent = e.target.value;
+    const cursorPos = e.target.selectionStart;
     updateChapterContent(activeChapter.id, newContent);
 
-    // Check for slash command
-    const lastLine = newContent.split('\n').pop() || '';
-    if (lastLine.startsWith('/')) {
-      setShowSlashMenu(true);
-      setSlashQuery(lastLine.slice(1));
-      setSlashIndex(0);
+    // Check for slash command anywhere in text
+    const textBeforeCursor = newContent.substring(0, cursorPos);
+    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
+    
+    if (lastSlashIndex !== -1) {
+      const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
+      // Only show menu if no space/newline after slash (still typing command)
+      if (!/[\s\n]/.test(textAfterSlash) || textAfterSlash.length === 0) {
+        setShowSlashMenu(true);
+        setSlashQuery(textAfterSlash);
+        setSlashPosition(lastSlashIndex);
+        setSlashIndex(0);
+      } else {
+        setShowSlashMenu(false);
+      }
     } else {
       setShowSlashMenu(false);
     }
@@ -98,77 +121,120 @@ export function Editor() {
   const acceptNextWord = () => {
     if (!activeChapter || !suggestion) return;
     const words = suggestion.split(/\s+/);
-    if (acceptedWords >= words.length) {
-      // All accepted
-      acceptAll();
-      return;
-    }
-    const accepted = words.slice(0, acceptedWords + 1).join(' ');
-    const remaining = words.slice(acceptedWords + 1).join(' ');
-    const newContent = activeChapter.content + (activeChapter.content.endsWith(' ') ? '' : ' ') + accepted;
+    if (acceptedWords >= words.length) return;
+    
+    const acceptedText = words.slice(0, acceptedWords + 1).join(' ');
+    const remainingText = words.slice(acceptedWords + 1).join(' ');
+    
+    const newContent = activeChapter.content + (activeChapter.content.endsWith(' ') ? '' : ' ') + words[acceptedWords];
     updateChapterContent(activeChapter.id, newContent);
     setAcceptedWords(acceptedWords + 1);
-    setSuggestion(remaining);
-    if (!remaining) setShowSuggestion(false);
+    
+    if (remainingText) {
+      setSuggestion(remainingText);
+    } else {
+      setShowSuggestion(false);
+      setSuggestion('');
+    }
   };
 
-  const acceptAll = () => {
+  const acceptAllSuggestion = () => {
     if (!activeChapter || !suggestion) return;
     const newContent = activeChapter.content + (activeChapter.content.endsWith(' ') ? '' : ' ') + suggestion;
     updateChapterContent(activeChapter.id, newContent);
-    setSuggestion('');
     setShowSuggestion(false);
-    setAcceptedWords(0);
+    setSuggestion('');
   };
 
   const rejectSuggestion = () => {
-    setSuggestion('');
     setShowSuggestion(false);
-    setAcceptedWords(0);
+    setSuggestion('');
   };
 
-  // Execute slash command
-  const executeSlashCommand = (cmd: SlashCommand) => {
-    if (!activeChapter) return;
-    // Remove the slash command from content
-    const lines = activeChapter.content.split('\n');
-    lines[lines.length - 1] = '';
-    updateChapterContent(activeChapter.id, lines.join('\n'));
+  // Select slash command
+  const selectSlashCommand = (cmd: SlashCommand) => {
+    setSelectedCommand(cmd);
     setShowSlashMenu(false);
+    setShowSlashInstruction(true);
+    setSlashInstruction('');
+  };
 
-    // Send to agent
-    // This would normally trigger the agent panel
-    // For now, we'll just show a notification
+  // Execute slash command with instruction
+  const executeCommand = async () => {
+    if (!activeChapter || !selectedCommand) return;
+    
+    setIsGenerating(true);
+    setShowSlashInstruction(false);
+    
+    try {
+      const notesContext = getNotesContext();
+      const result = await executeSlashCommand(
+        apiConfig,
+        selectedCommand.action,
+        activeChapter.content,
+        slashInstruction,
+        notesContext
+      );
+      
+      if (result) {
+        // Show diff
+        setDiffOriginal(activeChapter.content);
+        setDiffModified(result);
+        setShowDiff(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    
+    setIsGenerating(false);
+    setSlashInstruction('');
+    setSelectedCommand(null);
+  };
+
+  // Apply diff
+  const applyDiff = () => {
+    if (!activeChapter) return;
+    setIsApplyingDiff(true);
+    setTimeout(() => {
+      updateChapterContent(activeChapter.id, diffModified);
+      setShowDiff(false);
+      setDiffOriginal('');
+      setDiffModified('');
+      setIsApplyingDiff(false);
+    }, 300);
+  };
+
+  const rejectDiff = () => {
+    setShowDiff(false);
+    setDiffOriginal('');
+    setDiffModified('');
   };
 
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (showSlashMenu) {
+      if (showSlashMenu && filteredCommands.length > 0) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
-          setSlashIndex(i => Math.min(i + 1, filteredCommands.length - 1));
+          setSlashIndex((prev) => (prev + 1) % filteredCommands.length);
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          setSlashIndex(i => Math.max(i - 1, 0));
-        } else if (e.key === 'Enter') {
+          setSlashIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
           e.preventDefault();
-          if (filteredCommands[slashIndex]) {
-            executeSlashCommand(filteredCommands[slashIndex]);
-          }
+          selectSlashCommand(filteredCommands[slashIndex]);
         } else if (e.key === 'Escape') {
           setShowSlashMenu(false);
         }
-        return;
       }
-
+      
       if (showSuggestion) {
         if (e.key === 'Tab') {
           e.preventDefault();
           acceptNextWord();
         } else if (e.key === 'Enter' && e.ctrlKey) {
           e.preventDefault();
-          acceptAll();
+          acceptAllSuggestion();
         } else if (e.key === 'Escape') {
           rejectSuggestion();
         }
@@ -176,17 +242,29 @@ export function Editor() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [showSuggestion, showSlashMenu, suggestion, acceptedWords, slashIndex, filteredCommands]);
+  }, [showSlashMenu, filteredCommands, slashIndex, showSuggestion, suggestion, acceptedWords, activeChapter]);
+
+  // Export
+  const exportDocument = () => {
+    if (!activeChapter) return;
+    const blob = new Blob([activeChapter.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeChapter.title}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (!activeProject) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center glass p-12 max-w-md anim-scale-in">
-          <div className="text-7xl mb-4 anim-float">✍️</div>
-          <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+          <div className="text-6xl mb-4 anim-float">✍️</div>
+          <h2 className="text-2xl font-bold mb-2 text-gradient-anim">
             {t('welcome', language)}
           </h2>
-          <p className="opacity-60 text-lg">{t('welcomeDesc', language)}</p>
+          <p className="opacity-60 anim-fade-in">{t('welcomeDesc', language)}</p>
         </div>
       </div>
     );
@@ -196,9 +274,7 @@ export function Editor() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center glass p-8 anim-scale-in">
-          <div className="text-5xl mb-3 anim-float">📄</div>
-          <p className="opacity-60 text-lg">{t('noDocuments', language)}</p>
-          <p className="opacity-40 text-sm mt-2">Sélectionnez ou créez un chapitre</p>
+          <p className="opacity-60">{t('noDocuments', language)}</p>
         </div>
       </div>
     );
@@ -206,63 +282,52 @@ export function Editor() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden anim-fade-in">
-      {/* Chapter header */}
-      <div className="glass-subtle m-3 mb-0 p-3 flex items-center justify-between">
+      {/* Document header */}
+      <div className="glass-subtle m-3 mb-0 p-3 flex items-center justify-between anim-slide-down">
         <div className="flex items-center gap-3">
-          <Type size={18} className="text-emerald-400" />
+          <Type size={18} className="text-emerald-400 anim-float" />
           {titleEditing ? (
             <input
               type="text"
               value={editTitle}
-              onChange={e => setEditTitle(e.target.value)}
+              onChange={(e) => setEditTitle(e.target.value)}
               onBlur={() => {
                 updateChapterTitle(activeChapter.id, editTitle);
                 setTitleEditing(false);
               }}
-              onKeyDown={e => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   updateChapterTitle(activeChapter.id, editTitle);
                   setTitleEditing(false);
                 }
               }}
-              className="glass-input px-2 py-1 text-lg font-semibold"
+              className="glass-input px-3 py-1 text-lg font-semibold"
               autoFocus
             />
           ) : (
-            <h3
+            <h3 
               className="font-semibold text-lg cursor-pointer hover:text-emerald-400 transition-colors"
-              onClick={() => { setEditTitle(activeChapter.title); setTitleEditing(true); }}
+              onClick={() => {
+                setEditTitle(activeChapter.title);
+                setTitleEditing(true);
+              }}
             >
               {activeChapter.title}
             </h3>
           )}
-          {activeFolder && (
-            <span className="text-xs opacity-40 flex items-center gap-1">
-              <ChevronRight size={12} />
-              {activeFolder.name}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-4 text-sm opacity-60">
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 anim-fade-in">
             <Hash size={14} />
             {wordCount} {t('wordCount', language)}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 anim-fade-in" style={{ animationDelay: '0.1s' }}>
             <AlignLeft size={14} />
             {charCount} {t('charCount', language)}
           </span>
           <button
-            onClick={() => {
-              const blob = new Blob([activeChapter.content], { type: 'text/plain' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${activeChapter.title}.txt`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="flex items-center gap-1 hover:opacity-100 transition-opacity cursor-pointer hover-glow"
+            onClick={exportDocument}
+            className="flex items-center gap-1 hover:opacity-100 transition-all hover-lift cursor-pointer"
             title={t('export', language)}
           >
             <Download size={14} />
@@ -270,86 +335,47 @@ export function Editor() {
         </div>
       </div>
 
-      {/* Tags */}
-      {activeChapter.tags.length > 0 && (
-        <div className="flex gap-1 px-5 py-1 flex-wrap">
-          {activeChapter.tags.map(tag => (
-            <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 anim-scale-in">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Editor area */}
       <div className="flex-1 relative m-3">
-        <div className="glass h-full overflow-hidden relative">
+        <div className="glass h-full overflow-hidden relative anim-zoom-in">
           <textarea
             ref={editorRef}
             value={activeChapter.content}
             onChange={handleContentChange}
             className="w-full h-full p-6 bg-transparent resize-none outline-none text-base leading-relaxed"
             style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
-            placeholder={`${t('typeMessage', language)}\n\nTapez / pour les commandes...`}
+            placeholder={t('typeMessage', language)}
             spellCheck
           />
 
-          {/* Slash command menu */}
-          {showSlashMenu && filteredCommands.length > 0 && (
-            <div className="absolute bottom-20 left-6 glass-subtle p-2 min-w-[250px] max-h-[300px] overflow-y-auto anim-slide-up z-20">
-              <div className="text-xs opacity-40 px-2 py-1 mb-1">{t('slashCommands', language)}</div>
-              {filteredCommands.map((cmd, i) => (
-                <button
-                  key={cmd.name}
-                  onClick={() => executeSlashCommand(cmd)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm transition-all ${
-                    i === slashIndex ? 'bg-emerald-500/20 text-emerald-300' : 'hover:bg-white/5'
-                  }`}
-                >
-                  <span className="text-lg">{cmd.icon}</span>
-                  <div>
-                    <div className="font-medium">/{cmd.name}</div>
-                    <div className="text-xs opacity-50">{cmd.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Inline suggestion bar */}
+          {/* Inline suggestion overlay */}
           {showSuggestion && suggestion && (
-            <div className="absolute bottom-4 left-4 right-4 glass-subtle p-3 anim-slide-up">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="absolute bottom-4 left-4 right-4 glass-subtle p-3 flex items-center justify-between anim-slide-up shadow-xl">
+              <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-emerald-400 anim-pulse" />
-                <span className="text-sm font-medium text-emerald-400">{t('inlineSuggestion', language)}</span>
-                {acceptedWords > 0 && (
-                  <span className="text-xs opacity-40">
-                    ({acceptedWords} {t('nextWord', language)})
-                  </span>
-                )}
+                <span className="text-sm opacity-80 italic">
+                  {suggestion.split(/\s+/).slice(0, acceptedWords + 1).join(' ')}
+                  <span className="opacity-40"> {suggestion.split(/\s+/).slice(acceptedWords + 1).join(' ')}</span>
+                </span>
               </div>
-              <p className="text-sm opacity-80 italic mb-3 leading-relaxed">{suggestion}</p>
               <div className="flex gap-2">
                 <button
                   onClick={acceptNextWord}
-                  className="glass-button text-xs px-3 py-1.5 text-emerald-400 flex items-center gap-1 hover-glow anim-scale-hover"
+                  className="glass-button text-xs px-3 py-1 text-emerald-400 hover-glow ripple"
                 >
-                  <ChevronRight size={12} />
                   {t('nextWord', language)} (Tab)
                 </button>
                 <button
-                  onClick={acceptAll}
-                  className="glass-button text-xs px-3 py-1.5 text-blue-400 flex items-center gap-1 hover-glow anim-scale-hover"
+                  onClick={acceptAllSuggestion}
+                  className="glass-button text-xs px-3 py-1 text-blue-400 hover-glow ripple"
                 >
-                  <Check size={12} />
                   {t('acceptAll', language)} (Ctrl+Enter)
                 </button>
                 <button
                   onClick={rejectSuggestion}
-                  className="glass-button text-xs px-3 py-1.5 opacity-60 flex items-center gap-1 hover-glow anim-scale-hover"
+                  className="glass-button text-xs px-3 py-1 opacity-60 hover-glow ripple"
                 >
-                  <X size={12} />
-                  {t('rejectSuggestion', language)}
+                  {t('rejectSuggestion', language)} (Esc)
                 </button>
               </div>
             </div>
@@ -357,17 +383,135 @@ export function Editor() {
 
           {/* Generating indicator */}
           {isGenerating && (
-            <div className="absolute top-4 right-4 flex items-center gap-2 glass-subtle px-3 py-1.5 anim-fade-in">
-              <div className="flex gap-0.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 anim-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 anim-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 anim-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
+            <div className="absolute top-4 right-4 flex items-center gap-2 glass-subtle px-3 py-1.5 anim-scale-in">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 anim-pulse" />
               <span className="text-xs opacity-60">{t('generating', language)}</span>
             </div>
           )}
         </div>
+
+        {/* Slash command menu */}
+        {showSlashMenu && filteredCommands.length > 0 && (
+          <div className="absolute top-20 left-20 glass p-2 z-30 min-w-[280px] max-h-[300px] overflow-y-auto anim-scale-in shadow-2xl">
+            <div className="text-xs opacity-60 px-3 py-1 mb-1 flex items-center gap-2">
+              <Zap size={12} className="text-emerald-400" />
+              {t('slashCommands', language)}
+            </div>
+            {filteredCommands.map((cmd, index) => (
+              <button
+                key={cmd.name}
+                onClick={() => selectSlashCommand(cmd)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all anim-slide-in-left hover-lift ${
+                  index === slashIndex
+                    ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-emerald-400'
+                    : 'hover:bg-white/10'
+                }`}
+                style={{ animationDelay: `${index * 0.03}s` }}
+              >
+                <span className="text-lg">{cmd.icon}</span>
+                <div className="flex-1 text-left">
+                  <div className="font-medium">/{cmd.name}</div>
+                  <div className="text-xs opacity-60">{cmd.description}</div>
+                </div>
+                {index === slashIndex && <ChevronRight size={16} className="text-emerald-400" />}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Slash command instruction modal */}
+      {showSlashInstruction && selectedCommand && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="dropdown-backdrop" onClick={() => setShowSlashInstruction(false)} />
+          <div className="glass p-6 max-w-md w-full anim-scale-in shadow-2xl relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl anim-bounce-in">{selectedCommand.icon}</span>
+              <div>
+                <h3 className="text-lg font-bold text-gradient-anim">/{selectedCommand.name}</h3>
+                <p className="text-sm opacity-60">{selectedCommand.description}</p>
+              </div>
+            </div>
+            
+            <textarea
+              value={slashInstruction}
+              onChange={(e) => setSlashInstruction(e.target.value)}
+              placeholder="Décrivez votre instruction..."
+              className="glass-input w-full p-3 min-h-[120px] resize-none mb-4"
+              autoFocus
+            />
+            
+            <div className="flex gap-2">
+              <button
+                onClick={executeCommand}
+                disabled={!slashInstruction.trim() || isGenerating}
+                className="glass-button glass-button-primary flex-1 hover-glow ripple disabled:opacity-50"
+              >
+                {isGenerating ? t('generating', language) : 'Exécuter'}
+              </button>
+              <button
+                onClick={() => setShowSlashInstruction(false)}
+                className="glass-button hover-glow ripple"
+              >
+                {t('cancel', language)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diff viewer */}
+      {showDiff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="dropdown-backdrop" onClick={rejectDiff} />
+          <div className="glass p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col anim-scale-in shadow-2xl relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gradient-anim flex items-center gap-2">
+                <RefreshCw size={20} className="anim-rotate-in" />
+                Modifications proposées
+              </h3>
+              <button onClick={rejectDiff} className="glass-button p-2 hover-glow ripple">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto glass-subtle p-4 font-mono text-sm leading-relaxed">
+              {/* Simple diff visualization */}
+              <div className="whitespace-pre-wrap">
+                {diffModified.split('\n').map((line, i) => {
+                  const originalLines = diffOriginal.split('\n');
+                  const isChanged = !originalLines.includes(line);
+                  return (
+                    <div
+                      key={i}
+                      className={`${isChanged ? 'diff-added anim-slide-in-left' : ''}`}
+                      style={{ animationDelay: `${i * 0.02}s` }}
+                    >
+                      {line}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={applyDiff}
+                disabled={isApplyingDiff}
+                className="glass-button glass-button-primary flex-1 hover-glow ripple disabled:opacity-50"
+              >
+                {isApplyingDiff ? 'Application...' : 'Appliquer les modifications'}
+              </button>
+              <button
+                onClick={rejectDiff}
+                className="glass-button hover-glow ripple"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

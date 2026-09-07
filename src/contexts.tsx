@@ -30,6 +30,7 @@ interface AppState {
   deleteFolder: (folderId: string) => void;
   createChapter: (folderId: string, title: string) => void;
   deleteChapter: (chapterId: string) => void;
+  moveChapter: (chapterId: string, targetFolderId: string, targetProjectId?: string) => void;
   updateChapterContent: (chapterId: string, content: string) => void;
   updateChapterTitle: (chapterId: string, title: string) => void;
   updateChapterMemory: (chapterId: string, memory: string) => void;
@@ -44,6 +45,7 @@ interface AppState {
   setSettingsOpen: (open: boolean) => void;
   setNotesOpen: (open: boolean) => void;
   getRAGContext: (query: string) => string;
+  getNotesContext: () => string;
   indexProject: (projectId: string) => void;
   addTag: (projectId: string, tag: string) => void;
   removeTag: (projectId: string, tag: string) => void;
@@ -272,6 +274,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (activeChapterId === chapterId) setActiveChapterId(null);
   };
 
+  const moveChapter = (chapterId: string, targetFolderId: string, targetProjectId?: string) => {
+    setProjects(prev => {
+      // Find the chapter to move
+      let chapterToMove: Chapter | null = null;
+      let sourceProjectId: string | null = null;
+      
+      for (const p of prev) {
+        for (const f of p.folders) {
+          const chapter = f.chapters.find(c => c.id === chapterId);
+          if (chapter) {
+            chapterToMove = chapter;
+            sourceProjectId = p.id;
+            break;
+          }
+        }
+        if (chapterToMove) break;
+      }
+      
+      if (!chapterToMove || !sourceProjectId) return prev;
+      
+      const updatedChapter = { ...chapterToMove, folderId: targetFolderId, projectId: targetProjectId || sourceProjectId };
+      
+      // If moving to same project
+      if (!targetProjectId || targetProjectId === sourceProjectId) {
+        return prev.map(p => {
+          if (p.id !== sourceProjectId) return p;
+          return {
+            ...p,
+            folders: p.folders.map(f => {
+              // Remove from source folder
+              if (f.chapters.some(c => c.id === chapterId)) {
+                return { ...f, chapters: f.chapters.filter(c => c.id !== chapterId) };
+              }
+              // Add to target folder
+              if (f.id === targetFolderId) {
+                return { ...f, chapters: [...f.chapters, updatedChapter] };
+              }
+              return f;
+            }),
+            updatedAt: new Date().toISOString(),
+          };
+        });
+      }
+      
+      // Moving to different project
+      return prev.map(p => {
+        if (p.id === sourceProjectId) {
+          return {
+            ...p,
+            folders: p.folders.map(f => ({
+              ...f,
+              chapters: f.chapters.filter(c => c.id !== chapterId),
+            })),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        if (p.id === targetProjectId) {
+          return {
+            ...p,
+            folders: p.folders.map(f => {
+              if (f.id === targetFolderId) {
+                return { ...f, chapters: [...f.chapters, updatedChapter] };
+              }
+              return f;
+            }),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return p;
+      });
+    });
+  };
+
   const updateChapterContent = (chapterId: string, content: string) => {
     setProjects(prev => prev.map(p => ({
       ...p,
@@ -367,6 +442,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!activeProjectId) return '';
     const results = searchChunks(ragChunks, query, 5, activeProjectId);
     return results.map(r => r.content).join('\n\n---\n\n');
+  };
+
+  const getNotesContext = (): string => {
+    if (!activeProjectId) return '';
+    const project = projects.find(p => p.id === activeProjectId);
+    if (!project) return '';
+
+    const parts: string[] = [];
+
+    // Overview
+    const ov = project.notes.overview;
+    if (ov.premise || ov.genre || ov.plotSummary) {
+      parts.push(`## Vue d'ensemble\nPrémisse: ${ov.premise}\nGenre: ${ov.genre}\nTon: ${ov.tone}\nThèmes: ${ov.themes.join(', ')}\nCadre: ${ov.setting}\nRésumé: ${ov.plotSummary}\nRègles: ${ov.worldRules}`);
+    }
+
+    // Characters
+    if (project.notes.characters.length > 0) {
+      const chars = project.notes.characters.map(c =>
+        `${c.name}: ${c.personality} - ${c.background} (${c.goals})`
+      ).join('\n');
+      parts.push(`## Personnages\n${chars}`);
+    }
+
+    // Places
+    if (project.notes.places.length > 0) {
+      const places = project.notes.places.map(p =>
+        `${p.name} (${p.type}): ${p.atmosphere} - ${p.layout}`
+      ).join('\n');
+      parts.push(`## Lieux\n${places}`);
+    }
+
+    // Moments
+    if (project.notes.moments.length > 0) {
+      const moments = project.notes.moments.map(m =>
+        `${m.title} (${m.type}): ${m.description}`
+      ).join('\n');
+      parts.push(`## Moments clés\n${moments}`);
+    }
+
+    return parts.join('\n\n');
   };
 
   // Tags
@@ -524,7 +639,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLanguage, setTheme, setAnimationLevel,
     createProject, deleteProject,
     createFolder, deleteFolder,
-    createChapter, deleteChapter,
+    createChapter, deleteChapter, moveChapter,
     updateChapterContent, updateChapterTitle, updateChapterMemory,
     setActiveProject: setActiveProjectId,
     setActiveFolder: setActiveFolderId,
@@ -532,7 +647,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateAPIConfig,
     addAgentMessage, clearAgentMessages,
     setSidebarOpen, setAgentOpen, setSettingsOpen, setNotesOpen,
-    getRAGContext, indexProject,
+    getRAGContext, getNotesContext, indexProject,
     addTag, removeTag, addFolderTag, addChapterTag,
     updateOverview, addCharacter, updateCharacter, deleteCharacter,
     addPlace, updatePlace, deletePlace,

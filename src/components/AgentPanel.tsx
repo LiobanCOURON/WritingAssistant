@@ -13,7 +13,8 @@ export function AgentPanel() {
   const {
     language, agentMessages, activeChapter, activeProject, apiConfig,
     addAgentMessage, clearAgentMessages, agentOpen, setAgentOpen,
-    getRAGContext, updateChapterContent,
+    getRAGContext, getNotesContext, updateChapterContent,
+    addCharacter, addPlace, addMoment,
   } = useApp();
 
   const [input, setInput] = useState('');
@@ -49,9 +50,16 @@ export function AgentPanel() {
 
     try {
       const ragContext = getRAGContext(input);
+      const notesContext = getNotesContext();
       const projectContext = activeChapter
         ? `Chapitre actuel: "${activeChapter.title}" (dossier: ${activeProject?.folders.find(f => f.chapters.some(c => c.id === activeChapter.id))?.name || 'N/A'})\nMémoire du chapitre:\n${activeChapter.memory || 'Aucune'}\nContenu:\n${activeChapter.content.substring(0, 2000)}`
         : '';
+
+      const fullContext = [
+        notesContext ? `## Notes du projet:\n${notesContext}` : '',
+        ragContext ? `## Contexte RAG:\n${ragContext}` : '',
+        projectContext ? `## ${projectContext}` : '',
+      ].filter(Boolean).join('\n\n');
 
       const allMessages = [...agentMessages, userMsg];
 
@@ -60,7 +68,7 @@ export function AgentPanel() {
         f.chapters.map(c => ({ title: `${f.name}/${c.title}`, content: c.content }))
       ) || [];
 
-      const response = await agentChat(apiConfig, allMessages, ragContext, projectContext);
+      const response = await agentChat(apiConfig, allMessages, fullContext, '');
 
       addAgentMessage({
         id: crypto.randomUUID(),
@@ -87,8 +95,14 @@ export function AgentPanel() {
     { icon: CheckCircle, label: t('correct', language), action: 'Corrige les fautes de grammaire et d\'orthographe du document actuel.' },
     { icon: Search, label: t('searchContext', language), action: 'Recherche les informations clés dans les documents du projet.' },
     { icon: BarChart3, label: t('analyze', language), action: 'Analyse la structure et les thèmes du document actuel.' },
-    { icon: Lightbulb, label: t('slashCommands', language).replace('Commandes', 'Idées'), action: 'Propose des idées pour continuer l\'histoire.' },
+    { icon: Lightbulb, label: 'Idées', action: 'Propose des idées pour continuer l\'histoire.' },
     { icon: FileText, label: 'Plan', action: 'Génère un plan structuré pour la suite.' },
+  ];
+
+  const noteActions = [
+    { icon: '👤', label: 'Personnage', action: 'Analyse le texte et crée une fiche personnage détaillée pour le personnage principal mentionné.' },
+    { icon: '📍', label: 'Lieu', action: 'Analyse le texte et crée une fiche lieu détaillée pour le lieu principal mentionné.' },
+    { icon: '⚡', label: 'Moment', action: 'Analyse le texte et crée une fiche moment pour l\'événement clé décrit.' },
   ];
 
   const handleQuickAction = (action: string) => {
@@ -147,6 +161,29 @@ export function AgentPanel() {
             </button>
           ))}
         </div>
+        
+        {/* Note Actions */}
+        {activeProject && (
+          <div className="mt-2 pt-2 border-t border-white/5">
+            <div className="text-xs opacity-50 mb-1 flex items-center gap-1">
+              <span>📝</span> Créer une note
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {noteActions.map((na, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleQuickAction(na.action)}
+                  className="glass-subtle p-2 flex flex-col items-center gap-1 text-xs hover:bg-white/10 transition-all hover-glow anim-scale-hover"
+                  title={na.action}
+                  style={{ animationDelay: `${(i + quickActions.length) * 50}ms` }}
+                >
+                  <span className="text-base">{na.icon}</span>
+                  <span className="truncate w-full text-center text-[10px]">{na.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Messages */}

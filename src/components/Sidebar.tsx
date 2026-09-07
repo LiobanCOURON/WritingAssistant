@@ -12,7 +12,7 @@ export function Sidebar() {
     language, projects, activeProjectId, activeFolderId, activeChapterId,
     activeProject, sidebarOpen,
     createProject, deleteProject, createFolder, deleteFolder,
-    createChapter, deleteChapter, setActiveProject, setActiveFolder,
+    createChapter, deleteChapter, moveChapter, setActiveProject, setActiveFolder,
     setActiveChapter, addTag, removeTag, indexProject, setNotesOpen,
   } = useApp();
 
@@ -26,6 +26,8 @@ export function Sidebar() {
   const [showNewChapter, setShowNewChapter] = useState<string | null>(null);
   const [newTag, setNewTag] = useState('');
   const [showImport, setShowImport] = useState(false);
+  const [draggedChapterId, setDraggedChapterId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
 
   if (!sidebarOpen) return null;
 
@@ -194,15 +196,54 @@ export function Sidebar() {
 
                     {/* Chapters */}
                     {!collapsedFolders.has(folder.id) && (
-                      <div className="ml-5 space-y-0.5 anim-slide-down">
+                      <div
+                        className={`ml-5 space-y-0.5 anim-slide-down drop-zone ${dragOverFolderId === folder.id ? 'drag-over' : ''}`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDragOverFolderId(folder.id);
+                        }}
+                        onDragLeave={(e) => {
+                          e.stopPropagation();
+                          setDragOverFolderId(null);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (draggedChapterId) {
+                            moveChapter(draggedChapterId, folder.id);
+                          }
+                          setDraggedChapterId(null);
+                          setDragOverFolderId(null);
+                        }}
+                      >
                         {folder.chapters.map(chapter => (
                           <div
                             key={chapter.id}
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              setDraggedChapterId(chapter.id);
+                            }}
+                            onDragEnd={() => {
+                              setDraggedChapterId(null);
+                              setDragOverFolderId(null);
+                            }}
                             className={`flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer text-xs transition-all ${
                               activeChapterId === chapter.id ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/5 opacity-70 hover:opacity-100'
-                            }`}
+                            } ${draggedChapterId === chapter.id ? 'opacity-50 scale-95' : ''}`}
                             onClick={() => setActiveChapter(chapter.id)}
                           >
+                            <div className="drag-handle opacity-30 hover:opacity-100">
+                              <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+                                <circle cx="2" cy="2" r="1" />
+                                <circle cx="6" cy="2" r="1" />
+                                <circle cx="2" cy="6" r="1" />
+                                <circle cx="6" cy="6" r="1" />
+                                <circle cx="2" cy="10" r="1" />
+                                <circle cx="6" cy="10" r="1" />
+                              </svg>
+                            </div>
                             <FileText size={12} className="shrink-0" />
                             <span className="flex-1 truncate">{chapter.title}</span>
                             <button

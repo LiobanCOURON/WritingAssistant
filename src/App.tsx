@@ -26,6 +26,16 @@ function AppContent() {
         <div className="particle particle-3" />
         <div className="particle particle-4" />
         <div className="particle particle-5" />
+        <div className="particle particle-1" style={{ top: '20%', left: '80%', animationDuration: '18s' }} />
+        <div className="particle particle-2" style={{ top: '60%', left: '10%', animationDuration: '22s' }} />
+        <div className="particle particle-3" style={{ top: '80%', left: '70%', animationDuration: '25s' }} />
+        <div className="particle particle-4" style={{ top: '40%', left: '90%', animationDuration: '20s' }} />
+        <div className="particle particle-5" style={{ top: '10%', left: '50%', animationDuration: '28s' }} />
+        <div className="particle particle-1" style={{ top: '70%', left: '30%', animationDuration: '16s' }} />
+        <div className="particle particle-2" style={{ top: '30%', left: '60%', animationDuration: '24s' }} />
+        <div className="particle particle-3" style={{ top: '90%', left: '20%', animationDuration: '19s' }} />
+        <div className="particle particle-4" style={{ top: '50%', left: '40%', animationDuration: '21s' }} />
+        <div className="particle particle-5" style={{ top: '15%', left: '75%', animationDuration: '23s' }} />
       </div>
 
       {/* Top Bar */}
