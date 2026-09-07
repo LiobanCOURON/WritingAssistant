@@ -1113,6 +1113,26 @@ input,
 }
 
 /* ========================
+   ICONS BOUNCE ANIMATION
+   ======================== */
+
+[data-icons-bounce="true"] svg,
+[data-icons-bounce="true"] .lucide,
+[data-icons-bounce="true"] [class*="icon"],
+[data-icons-bounce="true"] .emoji-icon {
+  animation: iconBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+  0%, 100% { 
+    transform: translateY(0);
+  }
+  50% { 
+    transform: translateY(-8px);
+  }
+}
+
+/* ========================
    CHAOS MODE - EXTREME ANIMATIONS
    ======================== */
 

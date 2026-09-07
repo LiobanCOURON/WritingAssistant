@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import {
   Project, Folder, Chapter, AgentMessage, APIConfig,
   Language, Theme, AnimationLevel, RAGChunk, ProjectNotes,
-  CharacterNote, PlaceNote, MomentNote, OverviewNote
+  CharacterNote, PlaceNote, MomentNote, OverviewNote, CustomAnimationPreferences
 } from './types';
 import { searchChunks } from './services';
 
@@ -10,6 +10,7 @@ interface AppState {
   language: Language;
   theme: Theme;
   animationLevel: AnimationLevel;
+  customAnimations: CustomAnimationPreferences;
   projects: Project[];
   activeProjectId: string | null;
   activeFolderId: string | null;
@@ -24,6 +25,7 @@ interface AppState {
   setLanguage: (lang: Language) => void;
   setTheme: (theme: Theme) => void;
   setAnimationLevel: (level: AnimationLevel) => void;
+  setCustomAnimations: (prefs: CustomAnimationPreferences) => void;
   createProject: (name: string, description: string) => void;
   deleteProject: (id: string) => void;
   createFolder: (projectId: string, name: string) => void;
@@ -120,6 +122,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (saved as AnimationLevel) || 'none';
   });
 
+  const [customAnimations, setCustomAnimationsState] = useState<CustomAnimationPreferences>(() => {
+    const saved = localStorage.getItem('plumeai_customAnimations');
+    return saved ? JSON.parse(saved) : {
+      particles: true,
+      hover: true,
+      transitions: true,
+      entrance: true,
+      feedback: true,
+      micro: true,
+      iconsBounce: false,
+    };
+  });
+
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('plumeai_projects');
     return saved ? JSON.parse(saved) : [];
@@ -155,6 +170,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     applyTheme(theme);
   }, [theme]);
   useEffect(() => { localStorage.setItem('plumeai_animations', animationLevel); }, [animationLevel]);
+  useEffect(() => { localStorage.setItem('plumeai_customAnimations', JSON.stringify(customAnimations)); }, [customAnimations]);
+  useEffect(() => {
+    if (customAnimations.iconsBounce) {
+      document.documentElement.setAttribute('data-icons-bounce', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-icons-bounce');
+    }
+  }, [customAnimations]);
   useEffect(() => { localStorage.setItem('plumeai_projects', JSON.stringify(projects)); }, [projects]);
   useEffect(() => { localStorage.setItem('plumeai_apiConfig', JSON.stringify(apiConfig)); }, [apiConfig]);
   useEffect(() => { localStorage.setItem('plumeai_agentMessages', JSON.stringify(agentMessages)); }, [agentMessages]);
@@ -182,6 +205,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setAnimationLevel = (level: AnimationLevel) => {
     setAnimationLevelState(level);
     document.documentElement.setAttribute('data-animations', level);
+  };
+
+  const setCustomAnimations = (prefs: CustomAnimationPreferences) => {
+    setCustomAnimationsState(prefs);
+    // Apply icons bounce via data attribute
+    if (prefs.iconsBounce) {
+      document.documentElement.setAttribute('data-icons-bounce', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-icons-bounce');
+    }
   };
 
   // Computed
@@ -649,11 +682,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const value: AppState = {
-    language, theme, animationLevel, projects,
+    language, theme, animationLevel, customAnimations, projects,
     activeProjectId, activeFolderId, activeChapterId,
     apiConfig, agentMessages, ragChunks,
     sidebarOpen, agentOpen, settingsOpen, notesOpen,
-    setLanguage, setTheme, setAnimationLevel,
+    setLanguage, setTheme, setAnimationLevel, setCustomAnimations,
     createProject, deleteProject,
     createFolder, deleteFolder,
     createChapter, deleteChapter, moveChapter,

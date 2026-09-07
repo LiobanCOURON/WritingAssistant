@@ -15,6 +15,7 @@ export function SettingsModal() {
     apiConfig, updateAPIConfig,
     theme, setTheme,
     animationLevel, setAnimationLevel,
+    customAnimations, setCustomAnimations,
   } = useApp();
 
   const [inlineEndpoint, setInlineEndpoint] = useState(apiConfig.inlineEndpoint);
@@ -198,11 +199,18 @@ export function SettingsModal() {
                     { key: 'entrance', label: 'Animations d\'entrée', emoji: '🎬' },
                     { key: 'feedback', label: 'Feedback visuel', emoji: '💫' },
                     { key: 'micro', label: 'Micro-interactions', emoji: '⚡' },
+                    { key: 'iconsBounce', label: 'Icônes animées (haut/bas)', emoji: '🎭' },
                   ].map((anim) => (
                     <label key={anim.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all cursor-pointer">
                       <input
                         type="checkbox"
-                        defaultChecked
+                        checked={customAnimations[anim.key as keyof typeof customAnimations]}
+                        onChange={(e) => {
+                          setCustomAnimations({
+                            ...customAnimations,
+                            [anim.key]: e.target.checked,
+                          });
+                        }}
                         className="w-4 h-4 rounded accent-emerald-500"
                       />
                       <span className="text-lg">{anim.emoji}</span>

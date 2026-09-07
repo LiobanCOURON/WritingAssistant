@@ -2,6 +2,16 @@ export type Language = 'fr' | 'es' | 'zh' | 'de' | 'ja';
 export type Theme = 'light' | 'dark' | 'auto';
 export type AnimationLevel = 'none' | 'few' | 'more' | 'all' | 'chaos' | 'custom';
 
+export interface CustomAnimationPreferences {
+  particles: boolean;
+  hover: boolean;
+  transitions: boolean;
+  entrance: boolean;
+  feedback: boolean;
+  micro: boolean;
+  iconsBounce: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
