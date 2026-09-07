@@ -43,13 +43,13 @@ export function LanguageSwitcher() {
           
           {/* Dropdown avec effet liquid glass */}
           <div 
-            className="absolute right-0 top-full mt-2 z-50 min-w-[180px] anim-scale-in shadow-2xl rounded-xl p-2"
+            className="absolute right-0 top-full mt-2 z-[100] min-w-[180px] anim-scale-in shadow-2xl rounded-xl p-2"
             style={{
-              background: 'rgba(255, 255, 255, 0.1)',
+              background: 'rgba(15, 23, 42, 0.85)',
               backdropFilter: 'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
             }}
           >
             {(Object.keys(languageNames) as Language[]).map((lang, index) => (
