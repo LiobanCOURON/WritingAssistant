@@ -303,12 +303,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return {
             ...p,
             folders: p.folders.map(f => {
-              // Remove from source folder
-              if (f.chapters.some(c => c.id === chapterId)) {
+              const isSource = f.chapters.some(c => c.id === chapterId);
+              const isTarget = f.id === targetFolderId;
+
+              // Same folder: remove then re-add (reorder)
+              if (isSource && isTarget) {
+                const filtered = f.chapters.filter(c => c.id !== chapterId);
+                return { ...f, chapters: [...filtered, updatedChapter] };
+              }
+              // Only source: remove
+              if (isSource) {
                 return { ...f, chapters: f.chapters.filter(c => c.id !== chapterId) };
               }
-              // Add to target folder
-              if (f.id === targetFolderId) {
+              // Only target: add
+              if (isTarget) {
                 return { ...f, chapters: [...f.chapters, updatedChapter] };
               }
               return f;
