@@ -32,7 +32,7 @@ interface AppState {
   deleteFolder: (folderId: string) => void;
   createChapter: (folderId: string, title: string) => void;
   deleteChapter: (chapterId: string) => void;
-  moveChapter: (chapterId: string, targetFolderId: string, targetProjectId?: string) => void;
+  moveChapter: (chapterId: string, targetFolderId: string, targetProjectId?: string, targetChapterId?: string | null, position?: 'before' | 'after') => void;
   updateChapterContent: (chapterId: string, content: string) => void;
   updateChapterTitle: (chapterId: string, title: string) => void;
   updateChapterMemory: (chapterId: string, memory: string) => void;
@@ -316,7 +316,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (activeChapterId === chapterId) setActiveChapterId(null);
   };
 
-  const moveChapter = (chapterId: string, targetFolderId: string, targetProjectId?: string) => {
+  const moveChapter = (
+    chapterId: string, 
+    targetFolderId: string, 
+    targetProjectId?: string,
+    targetChapterId?: string | null,
+    position?: 'before' | 'after'
+  ) => {
     setProjects(prev => {
       // Find the chapter to move
       let chapterToMove: Chapter | null = null;
@@ -338,6 +344,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       const updatedChapter = { ...chapterToMove, folderId: targetFolderId, projectId: targetProjectId || sourceProjectId };
       
+      // Helper function to insert chapter at specific position
+      const insertChapterAtPosition = (chapters: Chapter[], targetId: string | null | undefined, pos: 'before' | 'after' | undefined): Chapter[] => {
+        if (!targetId || !pos) {
+          // No position specified, add at the end
+          return [...chapters, updatedChapter];
+        }
+        
+        const targetIndex = chapters.findIndex(c => c.id === targetId);
+        if (targetIndex === -1) {
+          // Target not found, add at the end
+          return [...chapters, updatedChapter];
+        }
+        
+        const newChapters = [...chapters];
+        const insertIndex = pos === 'before' ? targetIndex : targetIndex + 1;
+        newChapters.splice(insertIndex, 0, updatedChapter);
+        return newChapters;
+      };
+      
       // If moving to same project
       if (!targetProjectId || targetProjectId === sourceProjectId) {
         return prev.map(p => {
@@ -348,18 +373,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const isSource = f.chapters.some(c => c.id === chapterId);
               const isTarget = f.id === targetFolderId;
 
-              // Same folder: remove then re-add (reorder)
+              // Same folder: remove then re-add at position (reorder)
               if (isSource && isTarget) {
                 const filtered = f.chapters.filter(c => c.id !== chapterId);
-                return { ...f, chapters: [...filtered, updatedChapter] };
+                return { ...f, chapters: insertChapterAtPosition(filtered, targetChapterId, position) };
               }
               // Only source: remove
               if (isSource) {
                 return { ...f, chapters: f.chapters.filter(c => c.id !== chapterId) };
               }
-              // Only target: add
+              // Only target: add at position
               if (isTarget) {
-                return { ...f, chapters: [...f.chapters, updatedChapter] };
+                return { ...f, chapters: insertChapterAtPosition(f.chapters, targetChapterId, position) };
               }
               return f;
             }),
@@ -385,7 +410,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...p,
             folders: p.folders.map(f => {
               if (f.id === targetFolderId) {
-                return { ...f, chapters: [...f.chapters, updatedChapter] };
+                return { ...f, chapters: insertChapterAtPosition(f.chapters, targetChapterId, position) };
               }
               return f;
             }),

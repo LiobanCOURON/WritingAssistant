@@ -33,6 +33,8 @@ export function Sidebar() {
   const [showImport, setShowImport] = useState(false);
   const [draggedChapterId, setDraggedChapterId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [dragOverChapterId, setDragOverChapterId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after'>('before');
 
   if (!sidebarOpen) return null;
 
@@ -202,11 +204,15 @@ export function Sidebar() {
                     {/* Chapters */}
                     {!collapsedFolders.has(folder.id) && (
                       <div
-                        className={`ml-5 space-y-0.5 anim-slide-down drop-zone ${dragOverFolderId === folder.id ? 'drag-over' : ''}`}
+                        className={`ml-5 space-y-0.5 anim-slide-down drop-zone ${dragOverFolderId === folder.id && !dragOverChapterId ? 'drag-over' : ''}`}
                         onDragOver={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           setDragOverFolderId(folder.id);
+                          // Only set chapter to null if we're not over a specific chapter
+                          if (!(e.target as HTMLElement).closest('[data-chapter-id]')) {
+                            setDragOverChapterId(null);
+                          }
                         }}
                         onDragLeave={(e) => {
                           e.stopPropagation();
@@ -216,25 +222,43 @@ export function Sidebar() {
                           e.preventDefault();
                           e.stopPropagation();
                           if (draggedChapterId) {
-                            moveChapter(draggedChapterId, folder.id);
+                            // If dropping on a specific chapter, use position
+                            if (dragOverChapterId) {
+                              moveChapter(draggedChapterId, folder.id, undefined, dragOverChapterId, dropPosition);
+                            } else {
+                              // Otherwise, add at the end
+                              moveChapter(draggedChapterId, folder.id);
+                            }
                           }
                           setDraggedChapterId(null);
                           setDragOverFolderId(null);
+                          setDragOverChapterId(null);
                         }}
                       >
                         {folder.chapters.map(chapter => (
                           <div
                             key={chapter.id}
+                            data-chapter-id={chapter.id}
                             draggable
                             onDragStart={(e) => {
                               e.stopPropagation();
                               setDraggedChapterId(chapter.id);
                             }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const midpoint = rect.top + rect.height / 2;
+                              const position = e.clientY < midpoint ? 'before' : 'after';
+                              setDragOverChapterId(chapter.id);
+                              setDropPosition(position);
+                            }}
                             onDragEnd={() => {
                               setDraggedChapterId(null);
                               setDragOverFolderId(null);
+                              setDragOverChapterId(null);
                             }}
-                            className={`flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer text-xs transition-all ${
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-xs transition-all relative ${
                               activeChapterId === chapter.id ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-white/5 opacity-70 hover:opacity-100'
                             } ${draggedChapterId === chapter.id ? 'opacity-50 scale-95' : ''}`}
                             onClick={() => {
@@ -248,6 +272,15 @@ export function Sidebar() {
                               });
                             }}
                           >
+                            {/* Drop indicator line */}
+                            {dragOverChapterId === chapter.id && draggedChapterId !== chapter.id && (
+                              <div
+                                className={`absolute left-0 right-0 h-0.5 bg-emerald-400 pointer-events-none z-10 ${
+                                  dropPosition === 'before' ? '-top-0.5' : '-bottom-0.5'
+                                }`}
+                                style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.8)' }}
+                              />
+                            )}
                             <div className="drag-handle opacity-30 hover:opacity-100">
                               <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
                                 <circle cx="2" cy="2" r="1" />
